@@ -256,37 +256,42 @@ def generate_from_hidden_ZAMBRA(dbn, input_hid_prob, nr_gen_steps=1):
         c=1
         for rbm in reversed(dbn.rbm_layers):
             if c==1:
-              v, p_v = rbm.backward(input_hid_prob)
+              p_v, v = rbm.backward(input_hid_prob)
               layer_size = v.shape[1]
               hid_prob[2-c,:,:layer_size,gen_step]  = p_v #the hidden probability is the one in the input
               hid_states[2-c,:,:layer_size,gen_step]  = v
 
             else:
-              v, p_v = rbm.backward(v)
-              layer_size = v.shape[1]
               if c<len(dbn.rbm_layers):
+                p_v, v = rbm.backward(v)
+                layer_size = v.shape[1]
                 hid_prob[2-c,:,:layer_size,gen_step]  = p_v #the hidden probability is the one in the input
                 hid_states[2-c,:,:layer_size,gen_step]  = v
               else:
-                vis_prob[:,:,gen_step]  = p_v #the hidden probability is the one in the input
-                vis_states[:,:,gen_step]  = v
+                v, p_v = rbm.backward(v) #passo la probabilità (che in questo caso è v) dopo
+                layer_size = v.shape[1]
+                vis_prob[:,:,gen_step]  = v #the hidden probability is the one in the input
+                vis_states[:,:,gen_step]  = p_v
             c=c+1
       else:
             for rbm in dbn.rbm_layers:
-              v, p_v = rbm(v)
+              p_v, v = rbm(v)
             hid_prob[2,:,:,gen_step]  = p_v #the hidden probability is the one in the input
             hid_states[2,:,:,gen_step]  = v
 
             c=1
             for rbm in reversed(dbn.rbm_layers):
-              v, p_v = rbm.backward(v)
-              layer_size = v.shape[1]
+
               if c<len(dbn.rbm_layers):
+                p_v, v = rbm.backward(v)
+                layer_size = v.shape[1]
                 hid_prob[2-c,:,:layer_size,gen_step]  = p_v #the hidden probability is the one in the input
                 hid_states[2-c,:,:layer_size,gen_step]  = v
               else:
-                vis_prob[:,:,gen_step]  = p_v #the hidden probability is the one in the input
-                vis_states[:,:,gen_step]  = v
+                v, p_v = rbm.backward(v)
+                layer_size = v.shape[1]
+                vis_prob[:,:,gen_step]  = v #the hidden probability is the one in the input
+                vis_states[:,:,gen_step]  = p_v
               c=c+1
               
 
