@@ -173,10 +173,10 @@ def tool_loader_ZAMBRA(DEVICE):
         #end
         
         test_repr[run] = dbn.test(Xtest, Ytest)[0]
-
-        compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset,DEVICE)
         dbn.Num_classes = 10
         dbn.DEVICE = DEVICE
+        compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset)
+
 
         name = dbn.get_name()
         if run is not None:
