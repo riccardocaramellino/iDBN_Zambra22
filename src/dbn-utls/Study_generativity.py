@@ -271,7 +271,7 @@ def generate_from_hidden_ZAMBRA(dbn, input_hid_prob, nr_gen_steps=1):
                 v, p_v = rbm.backward(v) #passo la probabilità (che in questo caso è v) dopo
                 layer_size = v.shape[1]
                 vis_prob[:,:,gen_step]  = v #the hidden probability is the one in the input
-                vis_states[:,:,gen_step]  = p_v
+                vis_states[:,:,gen_step]  = v
             c=c+1
       else:
             for rbm in dbn.rbm_layers:
@@ -291,7 +291,7 @@ def generate_from_hidden_ZAMBRA(dbn, input_hid_prob, nr_gen_steps=1):
                 v, p_v = rbm.backward(v)
                 layer_size = v.shape[1]
                 vis_prob[:,:,gen_step]  = v #the hidden probability is the one in the input
-                vis_states[:,:,gen_step]  = p_v
+                vis_states[:,:,gen_step]  = v
               c=c+1
               
 
