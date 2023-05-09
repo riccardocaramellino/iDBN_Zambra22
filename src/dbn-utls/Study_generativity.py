@@ -9,18 +9,11 @@ from dbns import *
 
 
 
-def load_MNIST_data_ZAMBRA():
+def load_MNIST_data_ZAMBRA(CPARAMS,LPARAMS):
     #Riassume il caricamento dei dati del MNIST nella repository di Zambra, evitando problemi ed errori
 
     NUM_FEAT_MNIST = np.int32(784)
-    with open(os.path.join(os.getcwd(), 'cparams.json'), 'r') as filestream:
-        CPARAMS = json.load(filestream)
-    filestream.close()
     DATASET_ID = CPARAMS['DATASET_ID']
-
-    with open(os.path.join(os.getcwd(), f'lparams-{DATASET_ID.lower()}.json'), 'r') as filestream:
-        LPARAMS = json.load(filestream)
-    filestream.close()
     BATCH_SIZE = LPARAMS['BATCH_SIZE']
 
     mnist_train = datasets.MNIST('../data', train=True, download=True,
