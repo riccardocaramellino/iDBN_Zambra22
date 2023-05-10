@@ -99,7 +99,7 @@ def tool_loader_ZAMBRA(DEVICE):
   if torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
-  Training_ON = int(input('Do you want to train a DBN (Zambra 22 style) or do you want to load it? (1=yes, 0=no)'))
+  Training_ON = int(input('Do you want to load a iDBN (Zambra 22 style) or do you want to train it? (1=yes, 0=no)'))
   
   if Training_ON == 1:
     Xtrain = train_dataset['data'].to(DEVICE)
@@ -235,6 +235,7 @@ def label_biasing_ZAMBRA(model, on_digits=1, topk = 149):
 
 
         return gen_hidden
+
 
 def generate_from_hidden_ZAMBRA(dbn, input_hid_prob, nr_gen_steps=1):
     #input_hid_prob has size Nr_hidden_units x num_cases. Therefore i transpose it
