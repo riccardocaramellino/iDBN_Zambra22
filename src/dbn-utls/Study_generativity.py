@@ -379,6 +379,7 @@ class Intersection_analysis_ZAMBRA:
       lbl_bias_freqV = digit_digit_common_elements_count_biasing.view(100)/torch.sum(digit_digit_common_elements_count_biasing.view(100))
 
       return digit_digit_common_elements_count_biasing
+    
     def generate_chimera_lbl_biasing(self,VGG_cl, elements_of_interest = [8,2], temperature=1, nr_of_examples = 1000, plot=0, entropy_correction=0):
       b_vec =torch.zeros(nr_of_examples,2000) #this 2000 seems the layersize hardcoded
       if not(elements_of_interest =='rand'):
@@ -397,7 +398,7 @@ class Intersection_analysis_ZAMBRA:
       d = generate_from_hidden_ZAMBRA(self.model, b_vec, nr_gen_steps=self.nr_steps)
       
       d = Classifier_accuracy(d, VGG_cl, self.model, plot=plot, Thresholding_entropy=entropy_correction)
-      df_average,df_sem, Transition_matrix_rowNorm = classification_metrics(d,self.model, Plot=plot, Ian=1)
+      df_average,df_sem, Transition_matrix_rowNorm = classification_metrics_ZAMBRA(d,self.model, Plot=plot, Ian=1)
       
       if nr_of_examples < 16:
         Plot_example_generated(d, self.model ,row_step = 10, dS=20, custom_steps = True, Show_classification = False)
@@ -451,7 +452,7 @@ def Chimeras_nr_visited_states_ZAMBRA(model, VGG_cl, Ian =[], topk=149, apprx=1,
           gen_hidden_rep = gen_hidden.repeat(1,nr_sample_generated)
           d = generate_from_hidden_ZAMBRA(model, gen_hidden_rep , nr_gen_steps=100)
           d = Classifier_accuracy(d, VGG_cl,model, Thresholding_entropy=entropy_correction, labels=[], Batch_sz= 100, plot=0, dS=30, l_sz=3)
-          df_average,df_sem, Transition_matrix_rowNorm = classification_metrics(d,model,Plot=0,dS=50,Ian=1)
+          df_average,df_sem, Transition_matrix_rowNorm = classification_metrics_ZAMBRA(d,model,Plot=0,dS=50,Ian=1)
           Vis_states_mat[combination[0],combination[1]]=df_average.Nr_visited_states[0]
           Vis_states_err[combination[0],combination[1]]=df_sem.Nr_visited_states[0]
           Non_digit_mat[combination[0],combination[1]] = df_average['Non-digit'][0]
