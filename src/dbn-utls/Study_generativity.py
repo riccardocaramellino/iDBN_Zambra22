@@ -99,9 +99,9 @@ def tool_loader_ZAMBRA(DEVICE):
   if torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
-  Training_ON = int(input('Do you want to load a iDBN (Zambra 22 style) or do you want to train it? (1=yes, 0=no)'))
+  Load_DBN_yn = int(input('Do you want to load a iDBN (Zambra 22 style) or do you want to train it? (1=yes, 0=no)'))
   
-  if Training_ON == 1:
+  if Load_DBN_yn == 0:
     Xtrain = train_dataset['data'].to(DEVICE)
     Ytrain = train_dataset['labels'].to(DEVICE)
     Xtest  = test_dataset['data'].to(DEVICE)
