@@ -520,7 +520,7 @@ def Perc_H_act(model, sample_labels, gen_data_dictionary=[], dS = 50, l_sz = 5, 
         l = torch.where(sample_labels == digit) #trovo gli indici dei test data che contengono quel determinato digit
         nr_examples= len(l[0]) #nr degli esempi di quel digit (i.e. n)
 
-        gen_H_digit = gen_data_dictionary['hid_states'][2,l[0],:,:]
+        gen_H_digit = gen_data_dictionary['hid_states'][layer_of_interest,l[0],:,:]
         nr_steps = gen_H_digit.size()[2]
         if digit == 0:
             Mean_storing = torch.zeros(model.Num_classes,nr_steps, device = 'cuda')
