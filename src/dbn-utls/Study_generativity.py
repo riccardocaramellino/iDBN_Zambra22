@@ -6,6 +6,7 @@ from torchvision import datasets,transforms
 from torch.utils.data import DataLoader
 import torch
 from dbns import *
+import scipy
 
 
 
@@ -304,3 +305,67 @@ def generate_from_hidden_ZAMBRA(dbn, input_hid_prob, nr_gen_steps=1):
 
 
     return result_dict
+
+
+class Intersection_analysis_ZAMBRA:
+    def __init__(self, model, top_k_Hidden=100, nr_steps=100):
+        self.model = model
+        self.top_k_Hidden = top_k_Hidden
+        self.nr_steps = nr_steps
+        
+    def do_intersection_analysis(self):
+
+      for dig in range(self.model.Num_classes):
+        g_H = label_biasing_ZAMBRA(self.model, on_digits=dig, topk = -1)
+        if dig == 0:
+            hid_bias = g_H
+        else:
+            hid_bias = torch.hstack((hid_bias,g_H))
+
+      vettore_indici_allDigits_biasing = torch.empty((0),device= self.model.DEVICE)
+      #vettore_indici_allDigits_hidAvg = torch.empty((0),device= self.model.DEVICE)
+
+      for digit in range(self.model.Num_classes): #per ogni digit
+        hid_vec_B = hid_bias[:,digit] #questo è l'hidden state ottenuto con il label biasing di un certo digit
+        top_values_biasing, top_idxs_biasing = torch.topk(hid_vec_B, self.top_k_Hidden) #qui e la linea sotto  trovo i top p indici in termini di attività
+
+        vettore_indici_allDigits_biasing = torch.cat((vettore_indici_allDigits_biasing,top_idxs_biasing),0) #concateno i top p indici di ciascun i digits in questo vettore
+
+      unique_idxs_biasing,count_unique_idxs_biasing = torch.unique(vettore_indici_allDigits_biasing,return_counts=True) #degli indici trovati prendo solo quelli non ripetuti
+
+      #common_el_idxs_hidAvg = torch.empty((0),device= self.model.DEVICE)
+      #common_el_idxs_biasing = torch.empty((0),device= self.model.DEVICE)
+
+      digit_digit_common_elements_count_biasing = torch.zeros((10,10))
+
+      self.unique_H_idxs_biasing = unique_idxs_biasing
+
+      result_dict_biasing ={}
+
+
+      #itero per ogni digit per calcolare le entrate delle matrici 10 x 10
+      for row in range(self.model.Num_classes): 
+        for col in range(self.model.Num_classes):
+
+          common_el_idxs_biasing = torch.empty((0),device= self.model.DEVICE)
+
+          counter_biasing = 0
+          for id in unique_idxs_biasing: #per ogni indice unico del biasing di ogni digit
+            digits_found = torch.floor(torch.nonzero(vettore_indici_allDigits_biasing==id)/self.top_k_Hidden)
+            #nella linea precedente torch.nonzero(vettore_indici_allDigits_biasing==id) trova le posizioni nell'array vettore_indici_allDigits_biasing
+            #che ospitano l'unità ID. ora, essendo che vettore_indici_allDigits_biasing contiene le prime 100 unità più attive di ciascun digit, se divido gli indici per 100
+            #trovo per quali digit l'unità ID era attiva
+            if torch.any(digits_found==row) and torch.any(digits_found==col): #se i digits trovati ospitano sia il digit riga che quello colonna...
+                common_el_idxs_biasing = torch.hstack((common_el_idxs_biasing,id)) #aggiungi ID al vettore di ID che verranno usati per fare biasing
+                counter_biasing += 1
+
+          result_dict_biasing[str(row)+','+str(col)] = common_el_idxs_biasing
+          digit_digit_common_elements_count_biasing[row,col] = counter_biasing
+
+
+      self.result_dict_biasing = result_dict_biasing
+
+      print(digit_digit_common_elements_count_biasing)
+      lbl_bias_freqV = digit_digit_common_elements_count_biasing.view(100)/torch.sum(digit_digit_common_elements_count_biasing.view(100))
+
+      return digit_digit_common_elements_count_biasing
