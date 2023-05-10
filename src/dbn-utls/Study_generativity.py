@@ -7,6 +7,9 @@ from torch.utils.data import DataLoader
 import torch
 from dbns import *
 import scipy
+import matplotlib.pyplot as plt
+from matplotlib import cm
+import math
 
 
 
@@ -369,3 +372,50 @@ class Intersection_analysis_ZAMBRA:
       lbl_bias_freqV = digit_digit_common_elements_count_biasing.view(100)/torch.sum(digit_digit_common_elements_count_biasing.view(100))
 
       return digit_digit_common_elements_count_biasing
+    
+
+def Perc_H_act(model, sample_labels, gen_data_dictionary=[], dS = 50, l_sz = 5, layer_of_interest=2):
+
+    c=0 #inizializzo il counter per cambiamento colore
+    cmap = cm.get_cmap('hsv') # inizializzo la colormap che utilizzerò per il plotting
+    figure, axis = plt.subplots(1, 1, figsize=(15,15)) #setto le dimensioni della figura
+    lbls = [] # qui storo le labels x legenda
+
+    for digit in range(model.Num_classes): # per ogni digit...
+        
+        Color = cmap(c/256) #setto il colore di quel determinato digit
+        l = torch.where(sample_labels == digit) #trovo gli indici dei test data che contengono quel determinato digit
+        nr_examples= len(l[0]) #nr degli esempi di quel digit (i.e. n)
+
+        gen_H_digit = gen_data_dictionary['hid_states'][2,l[0],:,:]
+        nr_steps = gen_H_digit.size()[2]
+        if digit == 0:
+            Mean_storing = torch.zeros(model.Num_classes,nr_steps, device = 'cuda')
+            Sem_storing = torch.zeros(model.Num_classes,nr_steps, device = 'cuda')
+        SEM = torch.std(torch.mean(gen_H_digit,1)*100,0)/math.sqrt(nr_examples)
+        MEAN = torch.mean(torch.mean(gen_H_digit,1)*100,0).cpu()
+        Mean_storing[digit, : ] = MEAN.cuda()
+        Sem_storing[digit, : ] = SEM
+
+        if digit==0: #evito di fare sta operazione più volte
+          y_lbl = '% active H units'
+
+        SEM = SEM.cpu() #sposto la SEM su CPU x plotting
+        x = range(1,nr_steps+1) #asse delle x, rappresentante il nr di step di ricostruzione svolti
+        plt.plot(x, MEAN, c = Color, linewidth=l_sz) #plotto la media
+        plt.fill_between(x,MEAN-SEM, MEAN+SEM, color=Color, alpha=0.3) # e le barre di errore
+        
+        c = c+25
+        lbls.append(digit)
+
+    axis.legend(lbls, bbox_to_anchor=(1.04,1), loc="upper left", fontsize=dS) # legenda
+    #ridimensiono etichette assi e setto le labels
+    axis.tick_params(axis='x', labelsize= dS) 
+    axis.tick_params(axis='y', labelsize= dS)
+    axis.set_ylabel(y_lbl,fontsize=dS)
+    axis.set_xlabel('Generation step',fontsize=dS)
+    axis.set_title(y_lbl+' - digitwise',fontsize=dS)
+
+
+    axis.set_ylim([0,100])
+    return Mean_storing, Sem_storing
