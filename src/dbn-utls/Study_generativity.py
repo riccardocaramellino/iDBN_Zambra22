@@ -178,8 +178,10 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
   FINAL_MOMENTUM = LPARAMS['FINAL_MOMENTUM']
   LEARNING_RATE  = LPARAMS['LEARNING_RATE']
   WEIGHT_PENALTY = LPARAMS['WEIGHT_PENALTY']
-
-  train_dataset, test_dataset = load_MNIST_data_ZAMBRA(CPARAMS,LPARAMS)
+  if DATASET_ID == 'CelebA':
+    train_dataset, test_dataset = load_CelebA_data_ZAMBRA(CPARAMS,LPARAMS)
+  else:
+    train_dataset, test_dataset = load_MNIST_data_ZAMBRA(CPARAMS,LPARAMS)
   if torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
