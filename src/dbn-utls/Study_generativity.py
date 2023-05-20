@@ -76,7 +76,7 @@ def load_MNIST_data_ZAMBRA(CPARAMS,LPARAMS):
     return train_dataset, test_dataset
 
 
-def tool_loader_ZAMBRA(DEVICE):
+def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
   from google.colab import drive
   drive.mount('/content/gdrive')
   Zambra_folder_drive = '/content/gdrive/My Drive/ZAMBRA_DBN/'
@@ -142,9 +142,9 @@ def tool_loader_ZAMBRA(DEVICE):
                 {'W' : 0.01 * torch.nn.init.normal_(torch.empty(500, 500), mean = 0, std = 1),  
                 'a' : torch.zeros((1, 500)),  
                 'b' : torch.zeros((1, 500))},
-                {'W' : 0.01 * torch.nn.init.normal_(torch.empty(500, 2000), mean = 0, std = 1), 
+                {'W' : 0.01 * torch.nn.init.normal_(torch.empty(500, top_layer_size), mean = 0, std = 1), 
                 'a' : torch.zeros((1, 500)),  
-                'b' : torch.zeros((1, 2000))}
+                'b' : torch.zeros((1, top_layer_size))}
             ]
             
         elif DATASET_ID == 'SZ':
@@ -213,7 +213,7 @@ def compute_inverseW_for_lblBiasing_ZAMBRA(model,train_dataset):
         L[int(lbl),c]=1
         c=c+1
     p_v, v = model(train_dataset['data'].cuda(), only_forward = True)
-    V_lin = v.view(468*128, 2000)
+    V_lin = v.view(468*128, model.top_layer_size)
     #I compute the inverse of the weight matrix of the linear classifier. weights_inv has shape (model.Num_classes x Hidden layer size (10 x 1000))
     weights_inv = torch.transpose(torch.matmul(torch.transpose(V_lin,0,1), torch.linalg.pinv(L)), 0, 1)
 
@@ -381,7 +381,7 @@ class Intersection_analysis_ZAMBRA:
       return digit_digit_common_elements_count_biasing
     
     def generate_chimera_lbl_biasing(self,VGG_cl, elements_of_interest = [8,2], temperature=1, nr_of_examples = 1000, plot=0, entropy_correction=0):
-      b_vec =torch.zeros(nr_of_examples,2000) #this 2000 seems the layersize hardcoded
+      b_vec =torch.zeros(nr_of_examples,self.model.top_layer_size) #this 2000 seems the layersize hardcoded
       if not(elements_of_interest =='rand'):
         dictionary_key = str(elements_of_interest[0])+','+str(elements_of_interest[1])
         b_vec[:,self.result_dict_biasing[dictionary_key].long()]=1
