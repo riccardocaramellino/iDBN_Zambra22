@@ -139,8 +139,8 @@ class gDBN(DBN):
 
 class iDBN(DBN):
     
-    def __init__(self, alg_name, dataset_id, init_scheme, path_model, epochs):
-        super(iDBN, self).__init__(alg_name, dataset_id, init_scheme, path_model, epochs)
+    def __init__(self, alg_name, dataset_id, init_scheme, path_model, epochs, top_layer_size = 2000):
+        super(iDBN, self).__init__(alg_name, dataset_id, init_scheme, path_model, epochs, top_layer_size)
         
         self.algo = 'i'
     #end
