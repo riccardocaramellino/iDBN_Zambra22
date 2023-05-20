@@ -1,4 +1,3 @@
-
 import os
 import torch
 import rbms
@@ -42,6 +41,22 @@ class DBN(torch.nn.Module):
                          dataset_id = dataset_id)
             ]
         #end
+        if dataset_id == 'CelebA':
+            self.rbm_layers = [
+                rbms.RBM(4096, 2500, epochs,
+                         layer_id = 0,  
+                         init_scheme = init_scheme,
+                         dataset_id = dataset_id),
+                rbms.RBM(2500, 2500, epochs,
+                         layer_id = 1,
+                         init_scheme = init_scheme,
+                         dataset_id = dataset_id),
+                rbms.RBM(4500, top_layer_size, epochs,
+                         layer_id = 2, 
+                         init_scheme = init_scheme, 
+                         dataset_id = dataset_id)
+            ]
+        #end            
         
         self.alg_name = alg_name
         self.init_scheme = init_scheme
