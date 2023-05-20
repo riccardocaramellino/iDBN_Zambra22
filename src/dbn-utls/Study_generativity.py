@@ -16,8 +16,81 @@ from VGG_MNIST import *
 from methods import *
 from google.colab import files
 from itertools import combinations
+from skimage.filters import threshold_sauvola
 
 
+def load_CelebA_data_ZAMBRA(CPARAMS,LPARAMS):
+    # Riassume il caricamento dei dati del CelebA nella repository di Zambra, evitando problemi ed errori
+    idx_labels_of_interest = [4, 15, 22, 35] #4:bald, 15:Eyeglasses, 20: Male, 22: mustache, 24: No_Beard, 31: Smiling, 35:Wearing_Hat
+    NUM_FEAT_CELEBA = np.int32(64*64)
+    DATASET_ID = CPARAMS['DATASET_ID']
+    BATCH_SIZE = LPARAMS['BATCH_SIZE']
+    celeba_train = datasets.CelebA(root='../data', split='train', download=True,
+                        transform=transforms.Compose([
+                            transforms.Resize((64, 64)),
+                            transforms.Grayscale(),
+                            transforms.ToTensor()]))
+
+    celeba_test = datasets.CelebA(root='../data', split='test', download=True,
+                        transform=transforms.Compose([
+                            transforms.Resize((64, 64)),
+                            transforms.Grayscale(),
+                            transforms.ToTensor()]))
+
+    train_loader = DataLoader(celeba_train, batch_size=BATCH_SIZE, shuffle=True)
+    test_loader = DataLoader(celeba_test, batch_size=BATCH_SIZE, shuffle=False)
+
+    num_batches = celeba_train.__len__() // BATCH_SIZE
+    train_data = torch.empty(num_batches, BATCH_SIZE, NUM_FEAT_CELEBA)
+    train_labels = torch.empty(num_batches, BATCH_SIZE, len(idx_labels_of_interest))
+
+    with tqdm(train_loader, unit='Batch') as tdata:
+        for idx, (batch, labels) in enumerate(tdata):
+            if idx == 0:
+                b_Size0 = batch.shape[0]
+            tdata.set_description(f'Train Batch {idx}\t')
+            if idx < num_batches:
+                bsize = batch.shape[0]
+                gray_batch = batch.mean(dim=1, keepdim=True) # converti in scala di grigi
+                for i in range(bsize):
+                    gray_img = gray_batch[i].numpy().squeeze()
+                    # applica la binarizzazione di Sauvola-Pietikäinen
+                    threshold = threshold_sauvola(gray_img,window_size=7, k=0.05)
+                    binary_img = gray_img > threshold
+                    #binary_img = cv2.medianBlur(binary_img, 3) # applica un filtro mediano per rimuovere il rumore
+                    #print(i)
+                    #return gray_img, binary_img, labels
+                    train_data[idx, i, :] = torch.from_numpy(binary_img.reshape(-1).astype(np.float32))
+                    
+
+                train_labels[idx, :, :] = labels[:,idx_labels_of_interest].type(torch.float32)
+                #return gray_img, binary_img, train_labels[idx, :, :]
+
+
+    num_batches= celeba_test.__len__() // BATCH_SIZE
+    test_data = torch.empty(num_batches, BATCH_SIZE, NUM_FEAT_CELEBA)
+    test_labels = torch.empty(num_batches, BATCH_SIZE, len(idx_labels_of_interest))
+
+    with tqdm(test_loader, unit='Batch') as tdata:
+        for idx, (batch, labels) in enumerate(tdata):
+            tdata.set_description(f'Test Batch {idx}\t')
+            if idx < num_batches:
+                bsize = batch.shape[0]
+                gray_batch = batch.mean(dim=1, keepdim=True) # converti in scala di grigi
+                for i in range(bsize):
+                    gray_img = gray_batch[i].numpy().squeeze()
+                    # applica la binarizzazione di Sauvola-Pietikäinen
+                    threshold = threshold_sauvola(gray_img,window_size=7, k=0.05)
+                    binary_img = gray_img > threshold
+                    #binary_img = cv2.medianBlur(binary_img, 3) # applica un filtro mediano per rimuovere il rumore
+                    test_data[idx, i, :] = torch.from_numpy(binary_img.reshape(-1).astype(np.float32))
+
+                test_labels[idx, :, :] = labels[:,idx_labels_of_interest].type(torch.float32)
+
+    train_dataset = {'data': train_data, 'labels': train_labels}
+    test_dataset = {'data': test_data, 'labels': test_labels}
+
+    return train_dataset, test_dataset
 
 
 def load_MNIST_data_ZAMBRA(CPARAMS,LPARAMS):
