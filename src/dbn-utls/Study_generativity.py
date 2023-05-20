@@ -165,7 +165,7 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
             dbn.train(Xtrain, Xtest, Ytrain, Ytest, LPARAMS, readout = READOUT)
         elif ALG_NAME == 'i':
             
-            dbn = iDBN(ALG_NAME, DATASET_ID, INIT_SCHEME, PATH_MODEL, EPOCHS).to(DEVICE)
+            dbn = iDBN(ALG_NAME, DATASET_ID, INIT_SCHEME, PATH_MODEL, EPOCHS, top_layer_size = top_layer_size).to(DEVICE)
             dbn.train(Xtrain, Xtest, Ytrain, Ytest, LPARAMS, readout = READOUT, num_discr = NUM_DISCR)
         elif ALG_NAME == 'fs':
             
