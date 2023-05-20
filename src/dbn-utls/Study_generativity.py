@@ -40,14 +40,13 @@ def load_CelebA_data_ZAMBRA(CPARAMS,LPARAMS):
     train_loader = DataLoader(celeba_train, batch_size=BATCH_SIZE, shuffle=True)
     test_loader = DataLoader(celeba_test, batch_size=BATCH_SIZE, shuffle=False)
 
-    num_batches = celeba_train.__len__() // BATCH_SIZE
+    num_batches = (celeba_train.__len__())//2 // BATCH_SIZE
     train_data = torch.empty(num_batches, BATCH_SIZE, NUM_FEAT_CELEBA)
     train_labels = torch.empty(num_batches, BATCH_SIZE, len(idx_labels_of_interest))
+    
 
     with tqdm(train_loader, unit='Batch') as tdata:
         for idx, (batch, labels) in enumerate(tdata):
-            if idx == 0:
-                b_Size0 = batch.shape[0]
             tdata.set_description(f'Train Batch {idx}\t')
             if idx < num_batches:
                 bsize = batch.shape[0]
