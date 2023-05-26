@@ -200,15 +200,16 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
 def compute_inverseW_for_lblBiasing_ZAMBRA(model,train_dataset):
 
     lbls = train_dataset['labels'].view(-1)
-    Num_classes=10
+    Num_classes= model.Num_classes
     L = torch.zeros(Num_classes,lbls.shape[0], device = model.DEVICE)
-
+    nr_batches = train_dataset['data'].shape[0]
+    BATCH_SIZE = train_dataset['data'].shape[1]
     c=0
     for lbl in lbls:
         L[int(lbl),c]=1
         c=c+1
     p_v, v = model(train_dataset['data'].cuda(), only_forward = True)
-    V_lin = v.view(468*128, model.top_layer_size)
+    V_lin = v.view(nr_batches*BATCH_SIZE, model.top_layer_size)
     #I compute the inverse of the weight matrix of the linear classifier. weights_inv has shape (model.Num_classes x Hidden layer size (10 x 1000))
     weights_inv = torch.transpose(torch.matmul(torch.transpose(V_lin,0,1), torch.linalg.pinv(L)), 0, 1)
 
