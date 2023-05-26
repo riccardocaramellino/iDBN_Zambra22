@@ -250,11 +250,12 @@ def generate_from_hidden_ZAMBRA(dbn, input_hid_prob, nr_gen_steps=1):
 
     numcases = input_hid_prob.size()[0] #numbers of samples to generate
     hidden_layer_size = input_hid_prob.size()[1]
+    vis_layerSize = dbn.rbm_layers[0].Nin
 
     hid_prob = torch.zeros(len(dbn.rbm_layers),numcases,hidden_layer_size, nr_gen_steps, device=dbn.DEVICE)
     hid_states = torch.zeros(len(dbn.rbm_layers), numcases,hidden_layer_size, nr_gen_steps, device=dbn.DEVICE)
-    vis_prob = torch.zeros(numcases, 784, nr_gen_steps, device=dbn.DEVICE)
-    vis_states = torch.zeros(numcases ,784, nr_gen_steps, device=dbn.DEVICE)
+    vis_prob = torch.zeros(numcases, vis_layerSize, nr_gen_steps, device=dbn.DEVICE)
+    vis_states = torch.zeros(numcases ,vis_layerSize, nr_gen_steps, device=dbn.DEVICE)
 
 
     for gen_step in range(0, nr_gen_steps):
