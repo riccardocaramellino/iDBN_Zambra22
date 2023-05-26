@@ -200,6 +200,7 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
         else:
           dbn.Num_classes = 2
         dbn.DEVICE = DEVICE
+        return dbn,train_dataset, test_dataset
         compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset)
 
 
