@@ -41,7 +41,23 @@ class DBN(torch.nn.Module):
                          dataset_id = dataset_id)
             ]
         #end
-        if dataset_id == 'CelebA':
+        if dataset_id == 'CIFAR10':
+            self.rbm_layers = [
+                rbms.RBM(1024, 750, epochs,
+                         layer_id = 0,  
+                         init_scheme = init_scheme,
+                         dataset_id = dataset_id),
+                rbms.RBM(750, 750, epochs,
+                         layer_id = 1,
+                         init_scheme = init_scheme,
+                         dataset_id = dataset_id),
+                rbms.RBM(750, 2000, epochs,
+                         layer_id = 2, 
+                         init_scheme = init_scheme, 
+                         dataset_id = dataset_id)
+            ]
+
+        if 'CelebA' in dataset_id:
             self.rbm_layers = [
                 rbms.RBM(4096, 2500, epochs,
                          layer_id = 0,  

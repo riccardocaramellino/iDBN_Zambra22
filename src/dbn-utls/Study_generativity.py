@@ -19,133 +19,80 @@ from itertools import combinations
 from skimage.filters import threshold_sauvola
 
 
-def load_CelebA_data_ZAMBRA(CPARAMS,LPARAMS):
+def load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive):
     # Riassume il caricamento dei dati del CelebA nella repository di Zambra, evitando problemi ed errori
-    idx_labels_of_interest = [4, 15, 22, 35] #4:bald, 15:Eyeglasses, 20: Male, 22: mustache, 24: No_Beard, 31: Smiling, 35:Wearing_Hat
-    NUM_FEAT_CELEBA = np.int32(64*64)
     DATASET_ID = CPARAMS['DATASET_ID']
+    n_cols_labels = 1
+    if DATASET_ID =='MNIST':
+       NUM_FEAT= np.int32(28*28)
+    elif DATASET_ID =='CIFAR10':
+      NUM_FEAT= np.int32(32*32)
+    elif 'CelebA' in DATASET_ID:
+       NUM_FEAT= np.int32(64*64)
+       n_cols_labels = 40
+
+
     BATCH_SIZE = LPARAMS['BATCH_SIZE']
-    celeba_train = datasets.CelebA(root='../data', split='train', download=True,
-                        transform=transforms.Compose([
-                            transforms.Resize((64, 64)),
-                            transforms.Grayscale(),
-                            transforms.ToTensor()]))
+    test_filename = 'test_dataset_'+DATASET_ID+'.npz'
+    train_filename = 'train_dataset_'+DATASET_ID+'.npz'
+    trainfile_path= os.path.join(Zambra_folder_drive,'dataset_dicts',train_filename)
 
-    celeba_test = datasets.CelebA(root='../data', split='test', download=True,
-                        transform=transforms.Compose([
-                            transforms.Resize((64, 64)),
-                            transforms.Grayscale(),
-                            transforms.ToTensor()]))
+    if os.path.exists(trainfile_path):
+      train_dataset = np.load(trainfile_path)
+      test_dataset = np.load(os.path.join(Zambra_folder_drive,'dataset_dicts',test_filename))
+    else:
+      if DATASET_ID =='MNIST':
+        transform =transforms.Compose([transforms.ToTensor()])
+        data_train = datasets.MNIST('../data', train=True, download=True, transform=transform)
+        data_test = datasets.MNIST('../data', train=False, download=True, transform=transform)
 
-    train_loader = DataLoader(celeba_train, batch_size=BATCH_SIZE, shuffle=True)
-    test_loader = DataLoader(celeba_test, batch_size=BATCH_SIZE, shuffle=False)
+      elif DATASET_ID=='CIFAR10':
+        transform = transforms.Compose([
+            transforms.Grayscale(),
+            transforms.ToTensor()])
+        data_train = datasets.CIFAR10(root='../data', split='train', download=True, transform=transform)
+        data_test = datasets.CIFAR10(root='../data', split='test', download=True, transform=transform)   
+        
+      elif 'CelebA' in DATASET_ID:
+        transform=transforms.Compose([
+            transforms.Resize((64, 64)),
+            transforms.Grayscale(),
+            transforms.ToTensor()])
+        data_train = datasets.CelebA(root='../data', split='train', download=True, transform=transform)
+        data_test = datasets.CelebA(root='../data', split='test', download=True, transform=transform)
 
-    num_batches = (celeba_train.__len__())//2 // BATCH_SIZE
-    train_data = torch.empty(num_batches, BATCH_SIZE, NUM_FEAT_CELEBA)
-    train_labels = torch.empty(num_batches, BATCH_SIZE, len(idx_labels_of_interest))
-    
-
-    with tqdm(train_loader, unit='Batch') as tdata:
-        for idx, (batch, labels) in enumerate(tdata):
-            tdata.set_description(f'Train Batch {idx}\t')
-            if idx < num_batches:
-                bsize = batch.shape[0]
-                gray_batch = batch.mean(dim=1, keepdim=True) # converti in scala di grigi
-                for i in range(bsize):
-                    gray_img = gray_batch[i].numpy().squeeze()
-                    # applica la binarizzazione di Sauvola-Pietikäinen
-                    threshold = threshold_sauvola(gray_img,window_size=7, k=0.05)
-                    binary_img = gray_img > threshold
-                    #binary_img = cv2.medianBlur(binary_img, 3) # applica un filtro mediano per rimuovere il rumore
-                    #print(i)
-                    #return gray_img, binary_img, labels
-                    train_data[idx, i, :] = torch.from_numpy(binary_img.reshape(-1).astype(np.float32))
+      def data_and_labels(data_train, BATCH_SIZE,NUM_FEAT):
+        train_loader = DataLoader(data_train, batch_size=BATCH_SIZE, shuffle=True)
+        num_batches = data_train.__len__() // BATCH_SIZE
+        train_data = torch.empty(num_batches, BATCH_SIZE, NUM_FEAT)
+        train_labels = torch.empty(num_batches, BATCH_SIZE, n_cols_labels)
+        with tqdm(train_loader, unit = 'Batch') as tdata:
+            for idx, (batch, labels) in enumerate(tdata):
+                tdata.set_description(f'Train Batch {idx}\t')
+                if idx<num_batches:
+                  bsize = batch.shape[0]
+                  if DATASET_ID =='MNIST':
+                    train_data[idx,:,:] = batch.reshape(bsize, -1).type(torch.float32)
+                  else:
+                    gray_batch = batch.mean(dim=1, keepdim=True) # converti in scala di grigi
+                    for i in range(bsize):
+                        img_to_store = gray_batch[i].numpy().squeeze()
+                        if 'BW' in DATASET_ID:
+                          threshold = threshold_sauvola(img_to_store,window_size=7, k=0.05)
+                          img_to_store = img_to_store > threshold
+                        train_data[idx, i, :] = torch.from_numpy(img_to_store.reshape(-1).astype(np.float32))
                     
+                  train_labels[idx, :, :] = labels.type(torch.float32)
+        return train_data, train_labels   
+      
+      train_data, train_labels = data_and_labels(data_train, BATCH_SIZE,NUM_FEAT)
+      test_data, test_labels = data_and_labels(data_test, BATCH_SIZE,NUM_FEAT)
 
-                train_labels[idx, :, :] = labels[:,idx_labels_of_interest].type(torch.float32)
-                #return gray_img, binary_img, train_labels[idx, :, :]
-
-
-    num_batches= celeba_test.__len__() // BATCH_SIZE
-    test_data = torch.empty(num_batches, BATCH_SIZE, NUM_FEAT_CELEBA)
-    test_labels = torch.empty(num_batches, BATCH_SIZE, len(idx_labels_of_interest))
-
-    with tqdm(test_loader, unit='Batch') as tdata:
-        for idx, (batch, labels) in enumerate(tdata):
-            tdata.set_description(f'Test Batch {idx}\t')
-            if idx < num_batches:
-                bsize = batch.shape[0]
-                gray_batch = batch.mean(dim=1, keepdim=True) # converti in scala di grigi
-                for i in range(bsize):
-                    gray_img = gray_batch[i].numpy().squeeze()
-                    # applica la binarizzazione di Sauvola-Pietikäinen
-                    threshold = threshold_sauvola(gray_img,window_size=7, k=0.05)
-                    binary_img = gray_img > threshold
-                    #binary_img = cv2.medianBlur(binary_img, 3) # applica un filtro mediano per rimuovere il rumore
-                    test_data[idx, i, :] = torch.from_numpy(binary_img.reshape(-1).astype(np.float32))
-
-                test_labels[idx, :, :] = labels[:,idx_labels_of_interest].type(torch.float32)
-
-    train_dataset = {'data': train_data, 'labels': train_labels}
-    test_dataset = {'data': test_data, 'labels': test_labels}
+      train_dataset = {'data': train_data, 'labels': train_labels}
+      test_dataset = {'data': test_data, 'labels': test_labels}
 
     return train_dataset, test_dataset
 
-
-def load_MNIST_data_ZAMBRA(CPARAMS,LPARAMS):
-    #Riassume il caricamento dei dati del MNIST nella repository di Zambra, evitando problemi ed errori
-
-    NUM_FEAT_MNIST = np.int32(784)
-    DATASET_ID = CPARAMS['DATASET_ID']
-    BATCH_SIZE = LPARAMS['BATCH_SIZE']
-
-    mnist_train = datasets.MNIST('../data', train=True, download=True,
-                        transform=transforms.Compose(
-                        [transforms.ToTensor()] ))
-
-    mnist_test = datasets.MNIST('../data', train=False, download=True,
-                        transform=transforms.Compose(
-                        [transforms.ToTensor()]) )
-
-
-    train_loader = DataLoader(mnist_train, batch_size = BATCH_SIZE, shuffle = True)
-    test_loader  = DataLoader(mnist_test, batch_size = BATCH_SIZE, shuffle = False)
-
-    num_batches = mnist_train.__len__() // BATCH_SIZE
-    train_data = torch.empty(num_batches, BATCH_SIZE, NUM_FEAT_MNIST)
-    train_labels = torch.empty(num_batches, BATCH_SIZE, 1)
-
-    with tqdm(train_loader, unit = 'Batch') as tdata:
-        
-        for idx, (batch, labels) in enumerate(tdata):
-            if idx==0:
-              b_Size0 =  batch.shape[0]
-            tdata.set_description(f'Train Batch {idx}\t')
-            if idx<468:
-              bsize = batch.shape[0]
-              train_data[idx,:,:] = batch.reshape(bsize, -1).type(torch.float32)
-              train_labels[idx,:,:] = labels.reshape(bsize, -1).type(torch.float32)
-        #end
-    #end
-
-    num_batches = mnist_test.__len__() // BATCH_SIZE
-    test_data = torch.empty(num_batches, BATCH_SIZE, NUM_FEAT_MNIST)
-    test_labels = torch.empty(num_batches, BATCH_SIZE, 1)
-
-    with tqdm(test_loader, unit = 'Batch') as tdata:
-        
-        for idx, (batch, labels) in enumerate(tdata):
-            tdata.set_description(f'Test Batch {idx}\t')
-            if idx<78:
-              bsize = batch.shape[0]
-              test_data[idx,:,:] = batch.reshape(bsize, -1).type(torch.float32)
-              test_labels[idx,:,:] = labels.reshape(bsize, -1).type(torch.float32)
-        #end
-    #end
-    train_dataset = {'data' : train_data, 'labels' : train_labels}
-    test_dataset  = {'data' : test_data, 'labels' : test_labels}
-
-    return train_dataset, test_dataset
 
 
 def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
@@ -160,7 +107,6 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
 
   DATASET_ID = CPARAMS['DATASET_ID']
   ALG_NAME = CPARAMS['ALG_NAME']
-  MODEL_NAME = f'{ALG_NAME}DBN'
 
   READOUT        = CPARAMS['READOUT']
   RUNS           = CPARAMS['RUNS']
@@ -173,14 +119,8 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
   filestream.close()
   
   EPOCHS         = LPARAMS['EPOCHS']
-  INIT_MOMENTUM  = LPARAMS['INIT_MOMENTUM']
-  FINAL_MOMENTUM = LPARAMS['FINAL_MOMENTUM']
-  LEARNING_RATE  = LPARAMS['LEARNING_RATE']
-  WEIGHT_PENALTY = LPARAMS['WEIGHT_PENALTY']
-  if DATASET_ID == 'CelebA':
-    train_dataset, test_dataset = load_CelebA_data_ZAMBRA(CPARAMS,LPARAMS)
-  else:
-    train_dataset, test_dataset = load_MNIST_data_ZAMBRA(CPARAMS,LPARAMS)
+
+  train_dataset, test_dataset = load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive)
   if torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
@@ -208,30 +148,6 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
     for run in range(RUNS):
         
         print(f'\n\n---Run {run}\n')
-        if DATASET_ID == 'MNIST':
-            model = [
-                {'W' : 0.01 * torch.nn.init.normal_(torch.empty(784, 500), mean = 0, std = 1),  
-                'a' : torch.zeros((1, 784)),  
-                'b' : torch.zeros((1, 500))},
-                {'W' : 0.01 * torch.nn.init.normal_(torch.empty(500, 500), mean = 0, std = 1),  
-                'a' : torch.zeros((1, 500)),  
-                'b' : torch.zeros((1, 500))},
-                {'W' : 0.01 * torch.nn.init.normal_(torch.empty(500, top_layer_size), mean = 0, std = 1), 
-                'a' : torch.zeros((1, 500)),  
-                'b' : torch.zeros((1, top_layer_size))}
-            ]
-            
-        elif DATASET_ID == 'SZ':
-            model = [
-                {'W' : 0.1 * torch.nn.init.normal_(0, 1, (900, 80)), 
-                'a' : torch.zeros((1, 900)), 
-                'b' : torch.zeros((1, 80))},
-                {'W' : 0.1 * torch.nn.init.normal_(0, 1, (80, 400)), 
-                'a' : torch.zeros((1, 80)),  
-                'b' : torch.zeros((1, 400))}
-            ]
-        #end
-        
         
         if ALG_NAME == 'g':
             
@@ -258,7 +174,8 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
         #end
         
         test_repr[run] = dbn.test(Xtest, Ytest)[0]
-        dbn.Num_classes = 10
+        if not('CelebA' in DATASET_ID):
+          dbn.Num_classes = 10
         dbn.DEVICE = DEVICE
         compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset)
 
