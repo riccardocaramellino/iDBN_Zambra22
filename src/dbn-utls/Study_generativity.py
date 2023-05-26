@@ -17,6 +17,8 @@ from methods import *
 from google.colab import files
 from itertools import combinations
 from skimage.filters import threshold_sauvola
+from pathlib import Path
+
 
 
 def load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive):
@@ -36,10 +38,11 @@ def load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive):
     test_filename = 'test_dataset_'+DATASET_ID+'.npz'
     train_filename = 'train_dataset_'+DATASET_ID+'.npz'
     trainfile_path= os.path.join(Zambra_folder_drive,'dataset_dicts',train_filename)
+    testfile_path = os.path.join(Zambra_folder_drive,'dataset_dicts',test_filename)
 
     if os.path.exists(trainfile_path):
       train_dataset = dict(np.load(trainfile_path))
-      test_dataset = dict(np.load(os.path.join(Zambra_folder_drive,'dataset_dicts',test_filename)))
+      test_dataset = dict(np.load(testfile_path))
       # Convert the numpy arrays to torch tensors
       for key in train_dataset:
           train_dataset[key] = torch.from_numpy(train_dataset[key])
@@ -94,6 +97,9 @@ def load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive):
 
       train_dataset = {'data': train_data, 'labels': train_labels}
       test_dataset = {'data': test_data, 'labels': test_labels}
+      Path(os.path.join(Zambra_folder_drive,'dataset_dicts')).mkdir(exist_ok=True)
+      np.savez(trainfile_path, **train_dataset)
+      np.savez(testfile_path, **test_dataset)
 
     return train_dataset, test_dataset
 
