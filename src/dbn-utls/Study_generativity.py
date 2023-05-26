@@ -131,23 +131,26 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
   EPOCHS         = LPARAMS['EPOCHS']
 
   train_dataset, test_dataset = load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive)
+  if 'CelebA' in DATASET_ID:
+     nrEx = train_dataset['labels'].shape[0]
+     train_dataset['data'] = train_dataset['data'][:nrEx,:,:]
+     train_dataset['labels'] = train_dataset['labels'][:nrEx,:,:]
+
+
   if torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
   Load_DBN_yn = int(input('Do you want to load a iDBN (Zambra 22 style) or do you want to train it? (1=yes, 0=no)'))
   
   if Load_DBN_yn == 0:
-    
+    Xtrain = train_dataset['data'].to(DEVICE)
     Xtest  = test_dataset['data'].to(DEVICE)
     if not('CelebA' in DATASET_ID):
-      Xtrain = train_dataset['data'].to(DEVICE)
       Ytrain = train_dataset['labels'].to(DEVICE)
       Ytest  = test_dataset['labels'].to(DEVICE)
     else:
       cat_id = 20 #male
-      nrEx = train_dataset['labels'].shape[0]
-      Xtrain = train_dataset['data'][:nrEx//2,:,:].to(DEVICE)
-      Ytrain = train_dataset['labels'][:nrEx//2,:,cat_id].to(DEVICE)
+      Ytrain = train_dataset['labels'][:,:,cat_id].to(DEVICE)
       Ytest = test_dataset['labels'][:,:,cat_id].to(DEVICE)
 
     # -----------------------------------------------------
