@@ -132,9 +132,14 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
   
   if Load_DBN_yn == 0:
     Xtrain = train_dataset['data'].to(DEVICE)
-    Ytrain = train_dataset['labels'].to(DEVICE)
     Xtest  = test_dataset['data'].to(DEVICE)
-    Ytest  = test_dataset['labels'].to(DEVICE)
+    if not('CelebA' in DATASET_ID):
+      Ytrain = train_dataset['labels'].to(DEVICE)
+      Ytest  = test_dataset['labels'].to(DEVICE)
+    else:
+      cat_id = 20 #male
+      Ytrain = train_dataset['labels'][:,:,cat_id].to(DEVICE)
+      Ytest = test_dataset['labels'][:,:,cat_id].to(DEVICE)
 
     # -----------------------------------------------------
     # Initialize performance metrics data structures
@@ -180,6 +185,8 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
         test_repr[run] = dbn.test(Xtest, Ytest)[0]
         if not('CelebA' in DATASET_ID):
           dbn.Num_classes = 10
+        else:
+          dbn.Num_classes = 2
         dbn.DEVICE = DEVICE
         compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset)
 
@@ -223,7 +230,7 @@ def label_biasing_ZAMBRA(model, on_digits=1, topk = 149):
         # https://www.frontiersin.org/articles/10.3389/fpsyg.2013.00515/full
         
 
-        Num_classes=10
+        Num_classes=model.Num_classes
         # Now i set the label vector from which i will obtain the hidden layer of interest 
         Biasing_vec = torch.zeros (Num_classes,1, device = model.DEVICE)
         Biasing_vec[on_digits] = 1
