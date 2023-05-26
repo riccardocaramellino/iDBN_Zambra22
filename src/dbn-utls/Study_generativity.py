@@ -133,8 +133,8 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
   train_dataset, test_dataset = load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive)
   if 'CelebA' in DATASET_ID:
      nrEx = train_dataset['labels'].shape[0]
-     train_dataset['data'] = train_dataset['data'][:nrEx,:,:]
-     train_dataset['labels'] = train_dataset['labels'][:nrEx,:,:]
+     train_dataset['data'] = train_dataset['data'][:nrEx//2,:,:]
+     train_dataset['labels'] = train_dataset['labels'][:nrEx//2,:,:]
 
 
   if torch.cuda.is_available():
