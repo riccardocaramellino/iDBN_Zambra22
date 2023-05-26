@@ -38,8 +38,8 @@ def load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive):
     trainfile_path= os.path.join(Zambra_folder_drive,'dataset_dicts',train_filename)
 
     if os.path.exists(trainfile_path):
-      train_dataset = np.load(trainfile_path)
-      test_dataset = np.load(os.path.join(Zambra_folder_drive,'dataset_dicts',test_filename))
+      train_dataset = dict(np.load(trainfile_path))
+      test_dataset = dict(np.load(os.path.join(Zambra_folder_drive,'dataset_dicts',test_filename)))
     else:
       if DATASET_ID =='MNIST':
         transform =transforms.Compose([transforms.ToTensor()])
@@ -125,7 +125,7 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
   Load_DBN_yn = int(input('Do you want to load a iDBN (Zambra 22 style) or do you want to train it? (1=yes, 0=no)'))
-  return train_dataset
+  
   if Load_DBN_yn == 0:
     Xtrain = train_dataset['data'].to(DEVICE)
     Ytrain = train_dataset['labels'].to(DEVICE)
