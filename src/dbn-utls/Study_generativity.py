@@ -38,8 +38,8 @@ def load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive):
     trainfile_path= os.path.join(Zambra_folder_drive,'dataset_dicts',train_filename)
 
     if os.path.exists(trainfile_path):
-      train_dataset = np.load(trainfile_path)
-      test_dataset = np.load(os.path.join(Zambra_folder_drive,'dataset_dicts',test_filename))
+      train_dataset = dict(np.load(trainfile_path))
+      test_dataset = dict(np.load(os.path.join(Zambra_folder_drive,'dataset_dicts',test_filename)))
       # Convert the numpy arrays to torch tensors
       for key in train_dataset:
           train_dataset[key] = torch.from_numpy(train_dataset[key])
