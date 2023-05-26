@@ -133,8 +133,10 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
   train_dataset, test_dataset = load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive)
   if 'CelebA' in DATASET_ID:
      nrEx = train_dataset['labels'].shape[0]
+     cat_id = 20 #male
      train_dataset['data'] = train_dataset['data'][:nrEx//2,:,:]
-     train_dataset['labels'] = train_dataset['labels'][:nrEx//2,:,:]
+     train_dataset['labels'] = train_dataset['labels'][:nrEx//2,:,cat_id]
+     test_dataset['labels'] = test_dataset['labels'][:,:,cat_id]
 
 
   if torch.cuda.is_available():
@@ -145,13 +147,9 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
   if Load_DBN_yn == 0:
     Xtrain = train_dataset['data'].to(DEVICE)
     Xtest  = test_dataset['data'].to(DEVICE)
-    if not('CelebA' in DATASET_ID):
-      Ytrain = train_dataset['labels'].to(DEVICE)
-      Ytest  = test_dataset['labels'].to(DEVICE)
-    else:
-      cat_id = 20 #male
-      Ytrain = train_dataset['labels'][:,:,cat_id].to(DEVICE)
-      Ytest = test_dataset['labels'][:,:,cat_id].to(DEVICE)
+    Ytrain = train_dataset['labels'].to(DEVICE)
+    Ytest  = test_dataset['labels'].to(DEVICE)
+
 
     # -----------------------------------------------------
     # Initialize performance metrics data structures
