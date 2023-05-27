@@ -216,7 +216,7 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
   else:
     dbn = torch.load(os.path.join(Zambra_folder_drive, 'dbn_iterative_normal_'+DATASET_ID+'_run0.pkl'))
   
-  return dbn,train_dataset, test_dataset
+  return dbn,train_dataset, test_dataset, L_all
 
 
 def compute_inverseW_for_lblBiasing_ZAMBRA(model,train_dataset, L=[]):
