@@ -214,7 +214,7 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
                     open(os.path.join(Zambra_folder_drive, f'{name}.pkl'), 'wb'))
     #end
   else:
-    dbn = torch.load(os.path.join(Zambra_folder_drive, 'dbn_iterative_normal_MNIST_run0.pkl'))
+    dbn = torch.load(os.path.join(Zambra_folder_drive, 'dbn_iterative_normal_'+DATASET_ID+'_run0.pkl'))
   
   return dbn,train_dataset, test_dataset
 
