@@ -18,6 +18,7 @@ from google.colab import files
 from itertools import combinations
 from skimage.filters import threshold_sauvola
 from pathlib import Path
+from copy import deepcopy
 
 
 
@@ -135,6 +136,7 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
      nrEx = train_dataset['labels'].shape[0]
      cat_id = 20 #male
      train_dataset['data'] = train_dataset['data'][:nrEx//2,:,:]
+     L_all = deepcopy(train_dataset['labels'][:nrEx//2,:,:])
      train_dataset['labels'] = train_dataset['labels'][:nrEx//2,:,cat_id]
      test_dataset['labels'] = test_dataset['labels'][:,:,cat_id]
 
@@ -193,12 +195,15 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
         #end
         
         test_repr[run] = dbn.test(Xtest, Ytest)[0]
+        dbn.DEVICE = DEVICE
         if not('CelebA' in DATASET_ID):
           dbn.Num_classes = 10
+          compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset)
         else:
-          dbn.Num_classes = 2
-        dbn.DEVICE = DEVICE
-        compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset)
+          dbn.Num_classes = L_all.shape[2]
+          compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset,L = L_all)
+        
+        
 
 
         name = dbn.get_name()
@@ -214,17 +219,21 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
   return dbn,train_dataset, test_dataset
 
 
-def compute_inverseW_for_lblBiasing_ZAMBRA(model,train_dataset):
+def compute_inverseW_for_lblBiasing_ZAMBRA(model,train_dataset, L=[]):
 
     lbls = train_dataset['labels'].view(-1)
     Num_classes= model.Num_classes
-    L = torch.zeros(Num_classes,lbls.shape[0], device = model.DEVICE)
     nr_batches = train_dataset['data'].shape[0]
     BATCH_SIZE = train_dataset['data'].shape[1]
-    c=0
-    for lbl in lbls:
-        L[int(lbl),c]=1
-        c=c+1
+    if L==[]:
+      L = torch.zeros(Num_classes,lbls.shape[0], device = model.DEVICE)
+      c=0
+      for lbl in lbls:
+          L[int(lbl),c]=1
+          c=c+1
+    else:
+       L = L.view(40, -1)
+
     p_v, v = model(train_dataset['data'].cuda(), only_forward = True)
     V_lin = v.view(nr_batches*BATCH_SIZE, model.top_layer_size)
     #I compute the inverse of the weight matrix of the linear classifier. weights_inv has shape (model.Num_classes x Hidden layer size (10 x 1000))
