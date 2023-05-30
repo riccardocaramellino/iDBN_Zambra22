@@ -134,11 +134,12 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
   train_dataset, test_dataset = load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive)
   if 'CelebA' in DATASET_ID:
      nrEx = train_dataset['labels'].shape[0]
-     cat_id = 20 #male
+     #cat_id = 20 #male
      train_dataset['data'] = train_dataset['data'][:nrEx//2,:,:]
-     L_all = deepcopy(train_dataset['labels'][:nrEx//2,:,:])
-     train_dataset['labels'] = train_dataset['labels'][:nrEx//2,:,cat_id]
-     test_dataset['labels'] = test_dataset['labels'][:,:,cat_id]
+     #L_all = deepcopy(train_dataset['labels'][:nrEx//2,:,:])
+     #train_dataset['labels'] = train_dataset['labels'][:nrEx//2,:,cat_id]
+     #test_dataset['labels'] = test_dataset['labels'][:,:,cat_id]
+     train_dataset['labels'] = train_dataset['labels'][:nrEx//2,:,:]
 
 
   if torch.cuda.is_available():
@@ -200,8 +201,8 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
           dbn.Num_classes = 10
           compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset)
         else:
-          dbn.Num_classes = L_all.shape[2]
-          compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset,L = L_all)
+          dbn.Num_classes = train_dataset['labels'].shape[2]
+          compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset,L = train_dataset['labels'])
         
         
 
@@ -216,7 +217,7 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
   else:
     dbn = torch.load(os.path.join(Zambra_folder_drive, 'dbn_iterative_normal_'+DATASET_ID+'_run0.pkl'))
   
-  return dbn,train_dataset, test_dataset, L_all
+  return dbn,train_dataset, test_dataset
 
 
 def compute_inverseW_for_lblBiasing_ZAMBRA(model,train_dataset, L=[]):
