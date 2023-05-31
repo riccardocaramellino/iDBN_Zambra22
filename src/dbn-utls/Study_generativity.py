@@ -106,7 +106,7 @@ def load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive):
 
 
 
-def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
+def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000, half_data=False):
   from google.colab import drive
   drive.mount('/content/gdrive')
   Zambra_folder_drive = '/content/gdrive/My Drive/ZAMBRA_DBN/'
@@ -132,7 +132,7 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
   EPOCHS         = LPARAMS['EPOCHS']
 
   train_dataset, test_dataset = load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive)
-  if 'CelebA' in DATASET_ID:
+  if 'CelebA' in DATASET_ID and half_data == True:
      nrEx = train_dataset['labels'].shape[0]
      #cat_id = 20 #male
      train_dataset['data'] = train_dataset['data'][:nrEx//2,:,:]
@@ -140,6 +140,7 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000):
      #train_dataset['labels'] = train_dataset['labels'][:nrEx//2,:,cat_id]
      #test_dataset['labels'] = test_dataset['labels'][:,:,cat_id]
      train_dataset['labels'] = train_dataset['labels'][:nrEx//2,:,:]
+    #HALF DATA è Provvisorio
 
 
   if torch.cuda.is_available():
