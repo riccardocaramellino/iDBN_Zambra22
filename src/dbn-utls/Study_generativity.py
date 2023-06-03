@@ -3,7 +3,7 @@ import os
 import json
 import numpy as np
 from torchvision import datasets,transforms
-from torch.utils.data import DataLoader
+from torch.utils.data import Dataset, DataLoader
 import torch
 from dbns import *
 import scipy
@@ -19,7 +19,6 @@ from itertools import combinations
 from skimage.filters import threshold_sauvola
 from pathlib import Path
 from copy import deepcopy
-
 
 
 def load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive):
@@ -104,6 +103,69 @@ def load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive):
 
     return train_dataset, test_dataset
 
+class MyDataset(Dataset):
+    def __init__(self, features, labels):
+        self.features = features
+        self.labels = labels
+
+    def __len__(self):
+        return len(self.features)
+
+    def __getitem__(self, idx):
+        feature = self.features[idx]
+        label = self.labels[idx]
+        return feature, label
+
+def Multiclass_dataset(train_dataset, selected_idx = [20,31], for_classifier = False):
+  Train_data = copy.deepcopy(train_dataset['data'])
+  Train_labels = copy.deepcopy(train_dataset['labels'][:,:,selected_idx])
+  side_img = int(np.sqrt(Train_data.shape[2]))
+  Train_data = Train_data.view(Train_data.shape[0]*Train_data.shape[1], side_img, side_img).unsqueeze(1)
+  Train_labels = Train_labels.view(Train_labels.shape[0]*Train_labels.shape[1], Train_labels.shape[2])
+  powers_of_10 = torch.pow(10, torch.arange(len(selected_idx), dtype=torch.float))
+  Cat_labels = torch.matmul(Train_labels,powers_of_10)
+
+  cats, f_cat = torch.unique(Cat_labels, return_counts= True)
+  lowest_freq_idx = torch.argmin(f_cat)
+  lowest_freq = f_cat[lowest_freq_idx]
+  lowest_freq_cat = cats[lowest_freq_idx]
+
+  for category in cats:
+    if not(category==lowest_freq_cat):
+      cat_freq = f_cat[cats==category]
+      cat_indexes = torch.where(Cat_labels == category)[0]
+      if category==0:
+        indexes_to_delete = cat_indexes[torch.randperm(len(cat_indexes))[:cat_freq-lowest_freq]]
+      else: 
+        new_indexes_to_delete = cat_indexes[torch.randperm(len(cat_indexes))[:cat_freq-lowest_freq]]
+        indexes_to_delete = torch.cat((indexes_to_delete, new_indexes_to_delete))
+
+  Idxs_to_keep = torch.tensor([i for i in range(len(Cat_labels)) if i not in indexes_to_delete])
+  # use torch.index_select() to select the elements to keep
+  new_Cat_labels = torch.index_select(Cat_labels, 0, Idxs_to_keep)
+  new_Cat_labels = torch.where(new_Cat_labels == 10, 2, new_Cat_labels)
+  new_Cat_labels = torch.where(new_Cat_labels == 11, 3, new_Cat_labels)
+  
+  new_Train_data = torch.index_select(Train_data, 0, Idxs_to_keep)
+
+  if for_classifier:
+    dataset = MyDataset(new_Train_data, new_Cat_labels)
+    #dataset = MyDataset(Train_labels, Train_data)
+    train_loader = DataLoader(dataset, batch_size=64, shuffle=False)
+    return train_loader
+  else:
+    new_Train_data = torch.squeeze(new_Train_data,1)
+    new_Train_data = new_Train_data.view(new_Train_data.shape[0],new_Train_data.shape[1]*new_Train_data.shape[2])
+    num_batches = new_Train_data.__len__() // 64
+    new_Train_data = new_Train_data[:(num_batches*64),:]
+    new_Train_data = new_Train_data.view(num_batches,64,new_Train_data.shape[1])
+    new_Cat_labels = new_Cat_labels[:(num_batches*64)]
+    new_Cat_labels = new_Cat_labels.view(num_batches,64,1)
+
+    train_dataset = {'data': new_Train_data, 'labels': new_Cat_labels}
+
+    return train_dataset
+
 
 
 def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000, half_data=False, only_data = True):
@@ -133,13 +195,17 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000, half_data=False, only_data
 
   train_dataset, test_dataset = load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive)
   if 'CelebA' in DATASET_ID and half_data == True:
-     nrEx = train_dataset['labels'].shape[0]
+     #nrEx = train_dataset['labels'].shape[0] #usare
      #cat_id = 20 #male
-     train_dataset['data'] = train_dataset['data'][:nrEx//2,:,:]
+     #train_dataset['data'] = train_dataset['data'][:nrEx//2,:,:]  #usare
      #L_all = deepcopy(train_dataset['labels'][:nrEx//2,:,:])
      #train_dataset['labels'] = train_dataset['labels'][:nrEx//2,:,cat_id]
      #test_dataset['labels'] = test_dataset['labels'][:,:,cat_id]
-     train_dataset['labels'] = train_dataset['labels'][:nrEx//2,:,:]
+     #train_dataset['labels'] = train_dataset['labels'][:nrEx//2,:,:]  #usare
+
+     train_dataset = Multiclass_dataset(train_dataset)
+     test_dataset = Multiclass_dataset(test_dataset)
+
     #HALF DATA è Provvisorio
   if only_data:
      return train_dataset, test_dataset
