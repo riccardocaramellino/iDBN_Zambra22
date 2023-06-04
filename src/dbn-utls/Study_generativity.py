@@ -270,9 +270,10 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000, half_data=False, only_data
           dbn.Num_classes = 10
           compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset)
         else:
-          dbn.Num_classes = train_dataset['labels'].shape[2]
-          compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset,L = train_dataset['labels'])
-        
+          #dbn.Num_classes = train_dataset['labels'].shape[2]
+          dbn.Num_classes = 4
+          #compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset,L = train_dataset['labels'])
+          compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset)
         
 
 
