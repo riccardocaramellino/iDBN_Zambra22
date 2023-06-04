@@ -194,17 +194,18 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000, half_data=False, only_data
   EPOCHS         = LPARAMS['EPOCHS']
 
   train_dataset, test_dataset = load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive)
-  if 'CelebA' in DATASET_ID and half_data == True:
-     #nrEx = train_dataset['labels'].shape[0] #usare
-     #cat_id = 20 #male
-     #train_dataset['data'] = train_dataset['data'][:nrEx//2,:,:]  #usare
-     #L_all = deepcopy(train_dataset['labels'][:nrEx//2,:,:])
-     #train_dataset['labels'] = train_dataset['labels'][:nrEx//2,:,cat_id]
-     #test_dataset['labels'] = test_dataset['labels'][:,:,cat_id]
-     #train_dataset['labels'] = train_dataset['labels'][:nrEx//2,:,:]  #usare
-
-     train_dataset = Multiclass_dataset(train_dataset)
-     test_dataset = Multiclass_dataset(test_dataset)
+  if 'CelebA' in DATASET_ID:
+    if half_data == True:
+        nrEx = train_dataset['labels'].shape[0] #usare
+        #cat_id = 20 #male
+        train_dataset['data'] = train_dataset['data'][:nrEx//2,:,:]  #usare
+        #L_all = deepcopy(train_dataset['labels'][:nrEx//2,:,:])
+        #train_dataset['labels'] = train_dataset['labels'][:nrEx//2,:,cat_id]
+        #test_dataset['labels'] = test_dataset['labels'][:,:,cat_id]
+        train_dataset['labels'] = train_dataset['labels'][:nrEx//2,:,:]  #usare
+    else: 
+        train_dataset = Multiclass_dataset(train_dataset)
+        test_dataset = Multiclass_dataset(test_dataset)
 
     #HALF DATA è Provvisorio
   if only_data:
@@ -274,7 +275,6 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000, half_data=False, only_data
         torch.save(dbn.to(torch.device('cpu')),
                     open(os.path.join(Zambra_folder_drive, f'{name}.pkl'), 'wb'))
         
-        return dbn,train_dataset, test_dataset
         if not('CelebA' in DATASET_ID):
           dbn.Num_classes = 10
           compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset)
@@ -283,13 +283,7 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000, half_data=False, only_data
           dbn.Num_classes = 4
           #compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset,L = train_dataset['labels'])
           compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset)
-        
 
-
-        name = dbn.get_name()
-        if run is not None:
-            name += f'_run{run}'
-        #end
         torch.save(dbn.to(torch.device('cpu')),
                     open(os.path.join(Zambra_folder_drive, f'{name}.pkl'), 'wb'))
     #end
