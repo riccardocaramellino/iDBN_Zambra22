@@ -266,6 +266,15 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000, half_data=False, only_data
         
         test_repr[run] = dbn.test(Xtest, Ytest)[0]
         dbn.DEVICE = DEVICE
+
+        name = dbn.get_name()
+        if run is not None:
+            name += f'_run{run}'
+        #end
+        torch.save(dbn.to(torch.device('cpu')),
+                    open(os.path.join(Zambra_folder_drive, f'{name}.pkl'), 'wb'))
+        
+        return dbn,train_dataset, test_dataset
         if not('CelebA' in DATASET_ID):
           dbn.Num_classes = 10
           compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset)
