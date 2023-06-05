@@ -193,23 +193,24 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000, half_data=False, only_data
   
   EPOCHS         = LPARAMS['EPOCHS']
 
-  train_dataset, test_dataset = load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive)
+  train_dataset_original, test_dataset_original = load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive)
   if 'CelebA' in DATASET_ID:
     if half_data == True:
-        nrEx = train_dataset['labels'].shape[0] #usare
+        nrEx = train_dataset_original['labels'].shape[0] #usare
         #cat_id = 20 #male
+        train_dataset = copy.deepcopy(train_dataset_original)
         train_dataset['data'] = train_dataset['data'][:nrEx//2,:,:]  #usare
         #L_all = deepcopy(train_dataset['labels'][:nrEx//2,:,:])
         #train_dataset['labels'] = train_dataset['labels'][:nrEx//2,:,cat_id]
         #test_dataset['labels'] = test_dataset['labels'][:,:,cat_id]
         train_dataset['labels'] = train_dataset['labels'][:nrEx//2,:,:]  #usare
     else: 
-        train_dataset = Multiclass_dataset(train_dataset)
-        test_dataset = Multiclass_dataset(test_dataset)
+        train_dataset = Multiclass_dataset(train_dataset_original)
+        test_dataset = Multiclass_dataset(test_dataset_original)
 
     #HALF DATA è Provvisorio
   if only_data:
-     return train_dataset, test_dataset
+     return train_dataset_original, test_dataset_original
 
 
   if torch.cuda.is_available():
@@ -290,7 +291,7 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000, half_data=False, only_data
   else:
     dbn = torch.load(os.path.join(Zambra_folder_drive, 'dbn_iterative_normal_'+DATASET_ID+'_run0.pkl'))
   
-  return dbn,train_dataset, test_dataset
+  return dbn,train_dataset_original, test_dataset_original
 
 
 def compute_inverseW_for_lblBiasing_ZAMBRA(model,train_dataset, L=[]):
