@@ -179,7 +179,7 @@ def Multiclass_dataset(train_dataset, selected_idx = [20,31], for_classifier = F
 
 
 
-def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000, half_data=False, only_data = True):
+def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000,  selected_idx = [], half_data=False, only_data = True):
   from google.colab import drive
   drive.mount('/content/gdrive')
   Zambra_folder_drive = '/content/gdrive/My Drive/ZAMBRA_DBN/'
@@ -206,7 +206,7 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000, half_data=False, only_data
 
   train_dataset_original, test_dataset_original = load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive)
   if 'CelebA' in DATASET_ID:
-    if half_data == True:
+    if selected_idx == []:
         nrEx = train_dataset_original['labels'].shape[0] #usare
         #cat_id = 20 #male
         train_dataset = copy.deepcopy(train_dataset_original)
@@ -216,8 +216,8 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000, half_data=False, only_data
         #test_dataset['labels'] = test_dataset['labels'][:,:,cat_id]
         train_dataset['labels'] = train_dataset['labels'][:nrEx//2,:,:]  #usare
     else: 
-        train_dataset = Multiclass_dataset(train_dataset_original)
-        test_dataset = Multiclass_dataset(test_dataset_original)
+        train_dataset = Multiclass_dataset(train_dataset_original, selected_idx= selected_idx)
+        test_dataset = Multiclass_dataset(test_dataset_original, selected_idx = selected_idx)
 
     #HALF DATA è Provvisorio
   if only_data:
@@ -290,11 +290,12 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000, half_data=False, only_data
         if not('CelebA' in DATASET_ID):
           dbn.Num_classes = 10
           compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset)
-        else:
-          #dbn.Num_classes = train_dataset['labels'].shape[2]
-          dbn.Num_classes = 4
+        elif not(selected_idx == []):
+          dbn.Num_classes = train_dataset['labels'].shape[2]
           #compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset,L = train_dataset['labels'])
           compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset)
+        else:
+          compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset, L = train_dataset['labels'])
 
         torch.save(dbn.to(torch.device('cpu')),
                     open(os.path.join(Zambra_folder_drive, f'{name}.pkl'), 'wb'))
