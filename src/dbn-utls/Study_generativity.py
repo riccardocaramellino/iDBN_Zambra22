@@ -12,8 +12,10 @@ from matplotlib import cm
 import math
 import VGG_MNIST
 import methods
+import ResNet_utils
 from VGG_MNIST import *
 from methods import *
+from ResNet_utils import *
 from google.colab import files
 from itertools import combinations
 from skimage.filters import threshold_sauvola
@@ -116,37 +118,46 @@ class MyDataset(Dataset):
         label = self.labels[idx]
         return feature, label
 
-def Multiclass_dataset(train_dataset, selected_idx = [20,31], for_classifier = False):
-  Train_data = copy.deepcopy(train_dataset['data'])
-  Train_labels = copy.deepcopy(train_dataset['labels'][:,:,selected_idx])
+def Multiclass_dataset(train_dataset, selected_idx = [20,31], for_classifier = False,  DEVICE ='cuda'):
+  Train_data = copy.deepcopy(train_dataset['data']).to(DEVICE)
+  if not(selected_idx==[]):
+    Train_labels = copy.deepcopy(train_dataset['labels'][:,:,selected_idx]).to(DEVICE)
+  else:
+    Train_labels = copy.deepcopy(train_dataset['labels']).to(DEVICE)
   side_img = int(np.sqrt(Train_data.shape[2]))
   Train_data = Train_data.view(Train_data.shape[0]*Train_data.shape[1], side_img, side_img).unsqueeze(1)
   Train_labels = Train_labels.view(Train_labels.shape[0]*Train_labels.shape[1], Train_labels.shape[2])
-  powers_of_10 = torch.pow(10, torch.arange(len(selected_idx), dtype=torch.float))
-  Cat_labels = torch.matmul(Train_labels,powers_of_10)
 
-  cats, f_cat = torch.unique(Cat_labels, return_counts= True)
-  lowest_freq_idx = torch.argmin(f_cat)
-  lowest_freq = f_cat[lowest_freq_idx]
-  lowest_freq_cat = cats[lowest_freq_idx]
 
-  for category in cats:
-    if not(category==lowest_freq_cat):
-      cat_freq = f_cat[cats==category]
-      cat_indexes = torch.where(Cat_labels == category)[0]
-      if category==0:
-        indexes_to_delete = cat_indexes[torch.randperm(len(cat_indexes))[:cat_freq-lowest_freq]]
-      else: 
-        new_indexes_to_delete = cat_indexes[torch.randperm(len(cat_indexes))[:cat_freq-lowest_freq]]
-        indexes_to_delete = torch.cat((indexes_to_delete, new_indexes_to_delete))
+  if not(selected_idx==[]):
+    powers_of_10 = torch.pow(10, torch.arange(len(selected_idx), dtype=torch.float)).to(DEVICE)
+    Cat_labels = torch.matmul(Train_labels,powers_of_10)
 
-  Idxs_to_keep = torch.tensor([i for i in range(len(Cat_labels)) if i not in indexes_to_delete])
-  # use torch.index_select() to select the elements to keep
-  new_Cat_labels = torch.index_select(Cat_labels, 0, Idxs_to_keep)
-  new_Cat_labels = torch.where(new_Cat_labels == 10, 2, new_Cat_labels)
-  new_Cat_labels = torch.where(new_Cat_labels == 11, 3, new_Cat_labels)
-  
-  new_Train_data = torch.index_select(Train_data, 0, Idxs_to_keep)
+    cats, f_cat = torch.unique(Cat_labels, return_counts= True)
+    lowest_freq_idx = torch.argmin(f_cat)
+    lowest_freq = f_cat[lowest_freq_idx]
+    lowest_freq_cat = cats[lowest_freq_idx]
+
+    for category in cats:
+      if not(category==lowest_freq_cat):
+        cat_freq = f_cat[cats==category]
+        cat_indexes = torch.where(Cat_labels == category)[0]
+        if category==0:
+          indexes_to_delete = cat_indexes[torch.randperm(len(cat_indexes))[:cat_freq-lowest_freq]]
+        else: 
+          new_indexes_to_delete = cat_indexes[torch.randperm(len(cat_indexes))[:cat_freq-lowest_freq]]
+          indexes_to_delete = torch.cat((indexes_to_delete, new_indexes_to_delete))
+
+    Idxs_to_keep = torch.tensor([i for i in range(len(Cat_labels)) if i not in indexes_to_delete])
+    # use torch.index_select() to select the elements to keep
+    new_Cat_labels = torch.index_select(Cat_labels, 0, Idxs_to_keep)
+    new_Cat_labels = torch.where(new_Cat_labels == 10, 2, new_Cat_labels)
+    new_Cat_labels = torch.where(new_Cat_labels == 11, 3, new_Cat_labels)
+    
+    new_Train_data = torch.index_select(Train_data, 0, Idxs_to_keep)
+  else:
+    new_Train_data = Train_data
+    new_Cat_labels = Train_labels
 
   if for_classifier:
     dataset = MyDataset(new_Train_data, new_Cat_labels)
