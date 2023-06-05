@@ -172,24 +172,6 @@ def main(train_loader, test_loader, num_classes=40):
 
     return model
 
-def classifier_loader(train_dataset_original, test_dataset_original, selected_idx = [], DEVICE = 'cuda'):
-   Load_classifier = int(input('do you want to load a classifier or train it from scratch? (1=load, 0=train)'))
-   if selected_idx == []:
-      num_classes = 40
-   else:
-      num_classes = np.pow(2, len(selected_idx))
-   Zambra_folder_drive = '/content/gdrive/My Drive/ZAMBRA_DBN/'
-   model_name = Zambra_folder_drive+'resnet_'+str(num_classes)+'classes.pt'
-   if Load_classifier ==0:
-      train_dataloader = Multiclass_dataset(train_dataset_original, selected_idx = selected_idx, for_classifier = True)
-      test_dataloader = Multiclass_dataset(test_dataset_original, selected_idx = selected_idx, for_classifier = True)
-      model = main(train_dataloader, test_dataloader, num_classes=num_classes)
-      torch.save(model.state_dict(), model_name)
-   else:
-      model = ResNet().to(DEVICE)
-      model.load_state_dict(torch.load(model_name))
-   model.eval()
-   return model
 
 def Classifier_accuracy(input_dict, Classifier,model, Thresholding_entropy=[], labels=[], Batch_sz= 80, plot=1, dS=30, l_sz=3):
 
