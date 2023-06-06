@@ -215,6 +215,7 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000,  selected_idx = [], half_d
         #train_dataset['labels'] = train_dataset['labels'][:nrEx//2,:,cat_id]
         #test_dataset['labels'] = test_dataset['labels'][:,:,cat_id]
         train_dataset['labels'] = train_dataset['labels'][:nrEx//2,:,:]  #usare
+        test_dataset = copy.deepcopy(test_dataset_original)
     else: 
         train_dataset = Multiclass_dataset(train_dataset_original, selected_idx= selected_idx)
         test_dataset = Multiclass_dataset(test_dataset_original, selected_idx = selected_idx)
