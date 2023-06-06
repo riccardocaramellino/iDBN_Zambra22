@@ -284,8 +284,7 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000,  selected_idx = [], half_d
         if run is not None:
             name += f'_run{run}'
         #end
-        torch.save(dbn.to(torch.device('cpu')),
-                    open(os.path.join(Zambra_folder_drive, f'{name}.pkl'), 'wb'))
+        
         
         if not('CelebA' in DATASET_ID):
           dbn.Num_classes = 10
@@ -295,8 +294,9 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000,  selected_idx = [], half_d
           #compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset,L = train_dataset['labels'])
           compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset)
         else:
+          dbn.Num_classes = 40
           compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset, L = train_dataset['labels'])
-
+        name = name + str(dbn.Num_classes)+'classes'
         torch.save(dbn.to(torch.device('cpu')),
                     open(os.path.join(Zambra_folder_drive, f'{name}.pkl'), 'wb'))
     #end

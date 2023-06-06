@@ -127,14 +127,14 @@ def test(model, device, test_loader, criterion):
             data, target = data.to(device), target.to(device)
             output = model(data)
             if model.num_classes==40:
-              test_loss = criterion(output, target.float()).item()
+              loss = criterion(output, target.float())
               predicted = torch.sigmoid(output) >= 0.5
             else:
-              test_loss = criterion(output, target.long()).item()
+              loss = criterion(output, target.long())
               predicted = torch.argmax(output, axis = 1)
             total += torch.numel(target)
             correct += (predicted == target).sum().item()
-    
+            test_loss += loss.item()
     test_loss /= len(test_loader.dataset)
     accuracy = correct / total
     return test_loss, accuracy
