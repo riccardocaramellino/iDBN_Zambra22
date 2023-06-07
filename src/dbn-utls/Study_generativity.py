@@ -310,7 +310,7 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000,  selected_idx = [], half_d
     if not('CelebA' in DATASET_ID):
       Num_classes = 10
     elif not(selected_idx == []):
-      Num_classes = train_dataset['labels'].shape[2]
+      Num_classes = 2**len(selected_idx)
     else:
       Num_classes = 40
     dbn = torch.load(os.path.join(Zambra_folder_drive, 'dbn_iterative_normal_'+DATASET_ID+'_run0_'+str(Num_classes)+'classes.pkl'))
