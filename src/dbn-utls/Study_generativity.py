@@ -218,9 +218,9 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000,  selected_idx = [], half_d
         test_dataset = copy.deepcopy(test_dataset_original)
     else: 
         train_dataset = Multiclass_dataset(train_dataset_original, selected_idx= selected_idx)
-        print('train_dataset shape: '+ str(train_dataset.shape))
+        print('train_dataset shape: '+ str(train_dataset['labels'].shape))
         test_dataset = Multiclass_dataset(test_dataset_original, selected_idx = selected_idx)
-        print('test_dataset shape: '+ str(test_dataset.shape))
+        print('test_dataset shape: '+ str(test_dataset['labels'].shape))
 
     #HALF DATA è Provvisorio
   if only_data:
