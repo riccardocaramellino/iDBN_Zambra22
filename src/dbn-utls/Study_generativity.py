@@ -322,7 +322,7 @@ def classifier_loader(train_dataset_original, test_dataset_original, selected_id
    if selected_idx == []:
       num_classes = 40
    else:
-      num_classes = np.pow(2, len(selected_idx))
+      num_classes = 2**len(selected_idx)
    Zambra_folder_drive = '/content/gdrive/My Drive/ZAMBRA_DBN/'
    model_name = Zambra_folder_drive+'resnet_'+str(num_classes)+'classes.pt'
    if Load_classifier ==0:
