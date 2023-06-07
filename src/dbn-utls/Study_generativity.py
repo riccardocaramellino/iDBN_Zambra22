@@ -331,7 +331,7 @@ def classifier_loader(train_dataset_original, test_dataset_original, selected_id
       model = main(train_dataloader, test_dataloader, num_classes=num_classes)
       torch.save(model.state_dict(), model_name)
    else:
-      model = ResNet().to(DEVICE)
+      model = ResNet(num_classes=2**len(selected_idx)).to(DEVICE)
       model.load_state_dict(torch.load(model_name))
    model.eval()
    return model
