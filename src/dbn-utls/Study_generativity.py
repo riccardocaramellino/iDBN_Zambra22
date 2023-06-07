@@ -148,7 +148,7 @@ def Multiclass_dataset(train_dataset, selected_idx = [20,31], for_classifier = F
           new_indexes_to_delete = cat_indexes[torch.randperm(len(cat_indexes))[:cat_freq-lowest_freq]]
           indexes_to_delete = torch.cat((indexes_to_delete, new_indexes_to_delete))
 
-    Idxs_to_keep = torch.tensor([i for i in range(len(Cat_labels)) if i not in indexes_to_delete])
+    Idxs_to_keep = torch.tensor([i for i in range(len(Cat_labels)) if i not in indexes_to_delete], device = DEVICE)
     # use torch.index_select() to select the elements to keep
     new_Cat_labels = torch.index_select(Cat_labels, 0, Idxs_to_keep)
     new_Cat_labels = torch.where(new_Cat_labels == 10, 2, new_Cat_labels)
