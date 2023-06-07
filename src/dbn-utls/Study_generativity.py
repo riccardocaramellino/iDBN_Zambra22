@@ -151,9 +151,12 @@ def Multiclass_dataset(train_dataset, selected_idx = [20,31], for_classifier = F
     Idxs_to_keep = torch.tensor([i for i in range(len(Cat_labels)) if i not in indexes_to_delete], device = DEVICE)
     # use torch.index_select() to select the elements to keep
     new_Cat_labels = torch.index_select(Cat_labels, 0, Idxs_to_keep)
-    new_Cat_labels = torch.where(new_Cat_labels == 10, 2, new_Cat_labels)
-    new_Cat_labels = torch.where(new_Cat_labels == 11, 3, new_Cat_labels)
-    
+    proxy_cat = 2
+    for category in cats:
+       if category>=10:
+          new_Cat_labels = torch.where(new_Cat_labels == category, proxy_cat, new_Cat_labels)
+          proxy_cat = proxy_cat + 1
+              
     new_Train_data = torch.index_select(Train_data, 0, Idxs_to_keep)
   else:
     new_Train_data = Train_data
