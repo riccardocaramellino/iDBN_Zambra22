@@ -67,8 +67,12 @@ class DBN(torch.nn.Module):
                          layer_id = 1,
                          init_scheme = init_scheme,
                          dataset_id = dataset_id),
-                rbms.RBM(2500, 4500, epochs,
-                         layer_id = 2, 
+                rbms.RBM(2500, 2500, epochs,
+                         layer_id = 2,
+                         init_scheme = init_scheme,
+                         dataset_id = dataset_id),                         
+                rbms.RBM(2500, 5250, epochs,
+                         layer_id = 3, 
                          init_scheme = init_scheme, 
                          dataset_id = dataset_id)
             ]
