@@ -181,6 +181,7 @@ def Classifier_accuracy(input_dict, classifier,model, Thresholding_entropy=[], l
   input_data = input_dict['vis_states']
   image_side = int(np.sqrt(input_data.size()[1]))
   #input_data = nr_examples x vectorized image size (i.e. image size) x nr_steps
+  #input_data = nr_examples x 784 (i.e. image size) x nr_steps
   
   Cl_pred_matrix = torch.zeros(input_data.size()[0],input_data.size()[2], device=model.DEVICE)
   if not(image_side==64):
@@ -393,6 +394,7 @@ def classification_metrics(dict_classifier,model,test_labels=[], Plot=1, dS = 30
     df_average.at[digit,'Nr_visited_states'] = round(sum(nr_visited_states_list)/len(nr_visited_states_list),2)
     df_average.at[digit,'Nr_transitions'] = round(sum(nr_transitions_list)/len(nr_transitions_list),2)
     df_average.iloc[digit,2:] = torch.round(torch.mean(to_digits_mat,0),decimals=2).cpu()
+    df_average.iloc[digit,2:] = torch.round(torch.mean(to_digits_mat,0),decimals=2)
 
     df_sem.at[digit,'Nr_visited_states'] = round(np.std(nr_visited_states_list)/math.sqrt(len(nr_visited_states_list)),2)
     df_sem.at[digit,'Nr_transitions'] = round(np.std(nr_transitions_list)/math.sqrt(len(nr_transitions_list)),2)
