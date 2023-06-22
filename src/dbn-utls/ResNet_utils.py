@@ -317,7 +317,10 @@ def classification_metrics(dict_classifier,model,test_labels=[], Plot=1, dS = 30
   model = la nostra RBM
   test_labels = groundtruth labels
   '''
-  nr_states = model.Num_classes #+1 because we consider also the NON DIGIT class
+  if model.Num_classes==10:
+    nr_states = model.Num_classes+1 #+1 because we consider also the NON DIGIT class
+  else:
+    nr_states = model.Num_classes
 
   Cl_pred_matrix=dict_classifier['Cl_pred_matrix'] #classes predicted by the classifier (nr examples x nr generation steps)
   nr_ex=dict_classifier['Cl_pred_matrix'].size()[0] #number of examples
@@ -366,7 +369,7 @@ def classification_metrics(dict_classifier,model,test_labels=[], Plot=1, dS = 30
       Vis_digit = dict_classifier['Cl_pred_matrix'] #i just take all predictions together
     nr_visited_states_list =[] #qui listerò gli stati che vado a visitare
     nr_transitions_list =[] #qui listerò invece il numero di transizioni che farò
-    to_digits_mat = torch.zeros(Vis_digit.size()[0],model.Num_classes) #this is a matrix with nr.rows=nr.examples, nr.cols = 10+1 (nr. digits+no digits category)
+    to_digits_mat = torch.zeros(Vis_digit.size()[0],nr_states) #this is a matrix with nr.rows=nr.examples, nr.cols = 10+1 (nr. digits+no digits category)
     
     for nr_ex,example in enumerate(Vis_digit): # example=tensor of the reconstructions category guessed by the classifier in a single example (i.e. row-wise)
       no10_example = example[example!=10] #here are all generations different from nondigit
@@ -393,24 +396,26 @@ def classification_metrics(dict_classifier,model,test_labels=[], Plot=1, dS = 30
 
     df_sem.at[digit,'Nr_visited_states'] = round(np.std(nr_visited_states_list)/math.sqrt(len(nr_visited_states_list)),2)
     df_sem.at[digit,'Nr_transitions'] = round(np.std(nr_transitions_list)/math.sqrt(len(nr_transitions_list)),2)
-    df_sem.iloc[digit,2:] = torch.round(torch.std(to_digits_mat,0)/math.sqrt(to_digits_mat.size()[0]),decimals=2).cpu()
   
   #ratio tra passaggi alla classe giusta e la seconda classe di più alta frequenza
-  to_mat = df_average.iloc[:, 2:-1]
-  sem_mat = df_sem.iloc[:, 2:-1]
+  # to_mat = df_average.iloc[:, 2:-1]
+  # sem_mat = df_sem.iloc[:, 2:-1]
 
   if Plot==1:
         
         if test_labels!=[]:
           df_average.plot(y=['Nr_visited_states', 'Nr_transitions'], kind="bar",yerr=df_sem.loc[:, ['Nr_visited_states', 'Nr_transitions']],figsize=(30,10),fontsize=dS)
-          plt.xlabel("Digit",fontsize=dS)
+          plt.xlabel("Class",fontsize=dS)
+          if not(model.Num_classes==10):
+            plt.xticks(range(model.Num_classes), T_mat_labels, rotation=0)
+
         else:
           df_average.iloc[0:1].plot(y=['Nr_visited_states', 'Nr_transitions'], kind="bar",yerr=df_sem.loc[:,['Nr_visited_states', 'Nr_transitions']],xticks=[], figsize=(20,10),fontsize=dS)
           
         #plt.title("Classification_metrics-1",fontsize=dS)
         
         plt.ylabel("Number of states",fontsize=dS)
-        plt.ylim([0,10])
+        plt.ylim([0,model.Num_classes])
         plt.legend(["Visited states", "Transitions"], bbox_to_anchor=(0.73,1), loc="upper left", fontsize=dS-dS/3)
         
 
@@ -431,6 +436,7 @@ def classification_metrics(dict_classifier,model,test_labels=[], Plot=1, dS = 30
 
           #plot of the transition matrix
           Transition_mat_plot(Transition_matrix_rowNorm.cpu(),T_mat_labels, lS=lS)
+          Transition_mat_plot(Transition_matrix_rowNorm,T_mat_labels, lS=lS)
         else:
           
           #OLD PLOT: AVERAGE STATES VISITED BEGINNING FROM A CERTAIN LABEL BIASING DIGIT
@@ -460,3 +466,25 @@ def classification_metrics(dict_classifier,model,test_labels=[], Plot=1, dS = 30
            
 
   return df_average, df_sem, Transition_matrix_rowNorm
+
+
+def StateTimePlot(Trans_nr, Trans_nr_err, T_mat_labels, rounding=1, lS=25):
+
+
+        plt.figure(figsize=(15, 15))
+        ax = sns.heatmap(Trans_nr, linewidth=0.5, annot=True, annot_kws={"size": lS}, square=True, cbar_kws={"shrink": .82},fmt='.1f', cmap='jet')
+        if T_mat_labels==[]:
+           T_mat_labels = [str(i) for i in range(len(Trans_nr))]
+           if len(Trans_nr) == 11:
+              T_mat_labels.append('Non\ndigit')
+
+        ax.set_xticklabels(T_mat_labels)
+        if not(len(Trans_nr) == 11):
+          ax.set_yticklabels(T_mat_labels)
+        ax.tick_params(axis='both', labelsize=lS)
+
+        plt.xlabel('Class', fontsize = 25) # x-axis label with fontsize 15
+        plt.ylabel('Biasing Class', fontsize = 25) # y-axis label with fontsize 15
+        cbar = ax.collections[0].colorbar
+        cbar.ax.tick_params(labelsize=lS)
+        plt.show()
