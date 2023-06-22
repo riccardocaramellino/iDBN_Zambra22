@@ -173,7 +173,6 @@ def main(train_loader, test_loader, num_classes=40):
     return model
 
 
-def Classifier_accuracy(input_dict, classifier,model, Thresholding_entropy=[], labels=[], Batch_sz= 100, plot=1, dS=30, l_sz=3):
 def Classifier_accuracy(input_dict, classifier,model, Thresholding_entropy=[], labels=[], cl_lbls =[], Batch_sz= 100, plot=1, dS=30, l_sz=3):
   classifier = classifier.to('cuda')
   #plot = 2 -> only digitwise accuracy
