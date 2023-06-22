@@ -181,7 +181,6 @@ def Classifier_accuracy(input_dict, classifier,model, Thresholding_entropy=[], l
     Thresholding_entropy = torch.mean(Thresholding_entropy) + 2*torch.std(Thresholding_entropy)
   input_data = input_dict['vis_states']
   image_side = int(np.sqrt(input_data.size()[1]))
-  #input_data = nr_examples x vectorized image size (i.e. image size) x nr_steps
   #input_data = nr_examples x 784 (i.e. image size) x nr_steps
   
   Cl_pred_matrix = torch.zeros(input_data.size()[0],input_data.size()[2], device=model.DEVICE)
@@ -264,7 +263,6 @@ def Classifier_accuracy(input_dict, classifier,model, Thresholding_entropy=[], l
   if plot == 1:
       c=0
       cmap = cm.get_cmap('hsv')
-      lbls = range(model.Num_classes)
       if cl_lbls==[]:
         cl_lbls = range(model.Num_classes)
       x = range(1,input_data.size()[2]+1)
@@ -272,14 +270,11 @@ def Classifier_accuracy(input_dict, classifier,model, Thresholding_entropy=[], l
         figure, axis = plt.subplots(2, 2, figsize=(20,15))
         Cl_plot(axis[0,0],x,acc,x_lab='Nr. of steps',y_lab='Classifier accuracy', lim_y = [0,1],Title = 'Classifier accuracy',l_sz=l_sz, dS= dS, color='g')
         Cl_plot(axis[0,1],x,MEAN_entropy,y_err = SEM_entropy,x_lab='Nr. of steps',y_lab='Entropy', lim_y = [0,1],Title = 'Average entropy',l_sz=l_sz, dS= dS, color='r')
-        Cl_plot_digitwise(axis[1,0],lbls,x,digitwise_acc,x_lab='Generation step',y_lab='Accuracy',Num_classes=model.Num_classes, lim_y = [0,1],Title = 'Classifier accuracy - digitwise',l_sz=l_sz, dS= dS, cmap=cmap)
-        Cl_plot_digitwise(axis[1,1],lbls,x,digitwise_avg_entropy,digitwise_y_err=digitwise_sem_entropy,x_lab='Generation step',y_lab='Entropy',Num_classes=model.Num_classes, lim_y = [0,1],Title = 'Entropy - digitwise',l_sz=l_sz, dS= dS, cmap=cmap)
         Cl_plot_digitwise(axis[1,0],cl_lbls,x,digitwise_acc,x_lab='Generation step',y_lab='Accuracy',Num_classes=model.Num_classes, lim_y = [0,1],Title = 'Classifier accuracy - digitwise',l_sz=l_sz, dS= dS, cmap=cmap)
         Cl_plot_digitwise(axis[1,1],cl_lbls,x,digitwise_avg_entropy,digitwise_y_err=digitwise_sem_entropy,x_lab='Generation step',y_lab='Entropy',Num_classes=model.Num_classes, lim_y = [0,1],Title = 'Entropy - digitwise',l_sz=l_sz, dS= dS, cmap=cmap)
       else:
         figure, axis = plt.subplots(2, figsize=(10,15))
         Cl_plot(axis[0],x,acc,x_lab='Nr. of steps',y_lab='Classifier accuracy', lim_y = [0,1],Title = 'Classifier accuracy',l_sz=l_sz, dS= dS, color='g')
-        Cl_plot_digitwise(axis[1],lbls,x,digitwise_acc,x_lab='Generation step',y_lab='Accuracy',Num_classes=model.Num_classes, lim_y = [0,1],Title = 'Classifier accuracy - digitwise',l_sz=l_sz, dS= dS, cmap=cmap)
         Cl_plot_digitwise(axis[1],cl_lbls,x,digitwise_acc,x_lab='Generation step',y_lab='Accuracy',Num_classes=model.Num_classes, lim_y = [0,1],Title = 'Classifier accuracy - digitwise',l_sz=l_sz, dS= dS, cmap=cmap)
 
       plt.subplots_adjust(left=0.1, 
@@ -291,7 +286,6 @@ def Classifier_accuracy(input_dict, classifier,model, Thresholding_entropy=[], l
   elif plot==2:
       
       cmap = cm.get_cmap('hsv')
-      lbls = range(model.Num_classes)
       if cl_lbls==[]:
         cl_lbls = range(model.Num_classes)
       x = range(1,input_data.size()[2]+1)
@@ -299,7 +293,6 @@ def Classifier_accuracy(input_dict, classifier,model, Thresholding_entropy=[], l
       figure, axis = plt.subplots(1, 1, figsize=(15,15))
       Cl_plot(axis,x,acc,x_lab='Nr. of steps',y_lab='Classifier accuracy', lim_y = [0,1],Title = 'Classifier accuracy',l_sz=l_sz, dS= dS, color='g')
       figure, axis = plt.subplots(1, 1, figsize=(15,15))
-      Cl_plot_digitwise(axis,lbls,x,digitwise_acc,x_lab='Generation step',y_lab='Accuracy', Num_classes=model.Num_classes, lim_y = [0,1],Title = 'Classifier accuracy - digitwise',l_sz=l_sz, dS= dS, cmap=cmap)
       Cl_plot_digitwise(axis,cl_lbls,x,digitwise_acc,x_lab='Generation step',y_lab='Accuracy', Num_classes=model.Num_classes, lim_y = [0,1],Title = 'Classifier accuracy - digitwise',l_sz=l_sz, dS= dS, cmap=cmap)
       if not(image_side==64):
         figure, axis = plt.subplots(1, 1, figsize=(15,15))      
@@ -402,11 +395,11 @@ def classification_metrics(dict_classifier,model,test_labels=[], Plot=1, dS = 30
 
     df_average.at[digit,'Nr_visited_states'] = round(sum(nr_visited_states_list)/len(nr_visited_states_list),2)
     df_average.at[digit,'Nr_transitions'] = round(sum(nr_transitions_list)/len(nr_transitions_list),2)
-    df_average.iloc[digit,2:] = torch.round(torch.mean(to_digits_mat,0),decimals=2).cpu()
     df_average.iloc[digit,2:] = torch.round(torch.mean(to_digits_mat,0),decimals=2)
 
     df_sem.at[digit,'Nr_visited_states'] = round(np.std(nr_visited_states_list)/math.sqrt(len(nr_visited_states_list)),2)
     df_sem.at[digit,'Nr_transitions'] = round(np.std(nr_transitions_list)/math.sqrt(len(nr_transitions_list)),2)
+    df_sem.iloc[digit,2:] = torch.round(torch.std(to_digits_mat,0)/math.sqrt(to_digits_mat.size()[0]),decimals=2)
   
   #ratio tra passaggi alla classe giusta e la seconda classe di più alta frequenza
   # to_mat = df_average.iloc[:, 2:-1]
@@ -446,7 +439,6 @@ def classification_metrics(dict_classifier,model,test_labels=[], Plot=1, dS = 30
           StateTimePlot(Trans_nr, Trans_nr_err, T_mat_labels, rounding=1, lS=lS)
 
           #plot of the transition matrix
-          Transition_mat_plot(Transition_matrix_rowNorm.cpu(),T_mat_labels, lS=lS)
           Transition_mat_plot(Transition_matrix_rowNorm,T_mat_labels, lS=lS)
         else:
           
