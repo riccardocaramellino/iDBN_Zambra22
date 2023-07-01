@@ -92,12 +92,13 @@ class VGG16(nn.Module):
 
     return x
   
-def CelebA_ResNet_classifier(energy_based_model, ds_loaders = [], num_epochs = 20, learning_rate = 0.001, loadpath=''):
+def CelebA_ResNet_classifier(energy_based_model, ds_loaders = [], num_epochs = 20, learning_rate = 0.001, filename=''):
+    Zambra_folder_drive = '/content/gdrive/My Drive/ZAMBRA_DBN/'
     classifier = models.resnet18(pretrained=True)
     num_classes = energy_based_model.Num_classes
     classifier.fc = nn.Linear(classifier.fc.in_features, num_classes)
     if ds_loaders == []: #load old model
-        classifier.load_state_dict(torch.load(loadpath)) #DA FARE: AUTOMATIZZA IL LOADPATH
+        classifier.load_state_dict(torch.load(Zambra_folder_drive+filename)) #DA FARE: AUTOMATIZZA IL LOADPATH
         classifier = classifier.to('cuda')
     else:
         # Definizione del dataloader

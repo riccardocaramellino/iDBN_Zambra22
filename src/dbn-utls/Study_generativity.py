@@ -12,10 +12,8 @@ from matplotlib import cm
 import math
 import Classifiers
 import methods
-import ResNet_utils
 from Classifiers import *
 from methods import *
-from ResNet_utils import *
 from google.colab import files
 from itertools import combinations
 from skimage.filters import threshold_sauvola
@@ -106,9 +104,10 @@ def load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive):
     return train_dataset, test_dataset
 
 class MyDataset(Dataset):
-    def __init__(self, features, labels):
+    def __init__(self, features, labels, transform=None):
         self.features = features
         self.labels = labels
+        self.transform = transform
 
     def __len__(self):
         return len(self.features)
@@ -116,9 +115,15 @@ class MyDataset(Dataset):
     def __getitem__(self, idx):
         feature = self.features[idx]
         label = self.labels[idx]
+
+        # apply transformations if specified
+        if self.transform:
+            feature = self.transform(feature)
+
         return feature, label
 
-def Multiclass_dataset(train_dataset, selected_idx = [20,31], for_classifier = False,  DEVICE ='cuda'):
+def Multiclass_dataset(train_dataset, selected_idx = [20,31], for_classifier = False, Old_rbm=False, DEVICE ='cuda'):
+
   Train_data = copy.deepcopy(train_dataset['data']).to(DEVICE)
   if not(selected_idx==[]):
     Train_labels = copy.deepcopy(train_dataset['labels'][:,:,selected_idx]).to(DEVICE)
@@ -144,7 +149,7 @@ def Multiclass_dataset(train_dataset, selected_idx = [20,31], for_classifier = F
         cat_indexes = torch.where(Cat_labels == category)[0]
         if category==0:
           indexes_to_delete = cat_indexes[torch.randperm(len(cat_indexes))[:cat_freq-lowest_freq]]
-        else: 
+        else:
           new_indexes_to_delete = cat_indexes[torch.randperm(len(cat_indexes))[:cat_freq-lowest_freq]]
           indexes_to_delete = torch.cat((indexes_to_delete, new_indexes_to_delete))
 
@@ -156,18 +161,24 @@ def Multiclass_dataset(train_dataset, selected_idx = [20,31], for_classifier = F
        if category>=10:
           new_Cat_labels = torch.where(new_Cat_labels == category, proxy_cat, new_Cat_labels)
           proxy_cat = proxy_cat + 1
-              
+
     new_Train_data = torch.index_select(Train_data, 0, Idxs_to_keep)
   else:
     new_Train_data = Train_data
     new_Cat_labels = Train_labels
 
   if for_classifier:
-    dataset = MyDataset(new_Train_data, new_Cat_labels)
+    transform = transforms.Compose([
+        transforms.ToPILImage(),
+        transforms.Grayscale(num_output_channels=3),
+        transforms.Resize(224),
+        transforms.ToTensor(),
+    ])
+    dataset = MyDataset(features = new_Train_data, labels= new_Cat_labels, transform=transform)
     #dataset = MyDataset(Train_labels, Train_data)
     train_loader = DataLoader(dataset, batch_size=64, shuffle=False)
     return train_loader
-  else:
+  elif Old_rbm==False:
     new_Train_data = torch.squeeze(new_Train_data,1)
     new_Train_data = new_Train_data.view(new_Train_data.shape[0],new_Train_data.shape[1]*new_Train_data.shape[2])
     num_batches = new_Train_data.__len__() // 64
@@ -175,10 +186,12 @@ def Multiclass_dataset(train_dataset, selected_idx = [20,31], for_classifier = F
     new_Train_data = new_Train_data.view(num_batches,64,new_Train_data.shape[1])
     new_Cat_labels = new_Cat_labels[:(num_batches*64)]
     new_Cat_labels = new_Cat_labels.view(num_batches,64,1)
-
     train_dataset = {'data': new_Train_data, 'labels': new_Cat_labels}
-
     return train_dataset
+  else:
+    new_Train_data = new_Train_data.squeeze(1)
+    new_Cat_labels = new_Cat_labels
+    return new_Train_data, new_Cat_labels
 
 
 
@@ -317,24 +330,27 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000,  selected_idx = [], half_d
   
   return dbn,train_dataset_original, test_dataset_original
 
-def classifier_loader(train_dataset_original, test_dataset_original, selected_idx = [], DEVICE = 'cuda'):
-   Load_classifier = int(input('do you want to load a classifier or train it from scratch? (1=load, 0=train)'))
-   if selected_idx == []:
-      num_classes = 40
-   else:
-      num_classes = 2**len(selected_idx)
-   Zambra_folder_drive = '/content/gdrive/My Drive/ZAMBRA_DBN/'
-   model_name = Zambra_folder_drive+'resnet_'+str(num_classes)+'classes.pt'
-   if Load_classifier ==0:
-      train_dataloader = Multiclass_dataset(train_dataset_original, selected_idx = selected_idx, for_classifier = True)
-      test_dataloader = Multiclass_dataset(test_dataset_original, selected_idx = selected_idx, for_classifier = True)
-      model = main(train_dataloader, test_dataloader, num_classes=num_classes)
-      torch.save(model.state_dict(), model_name)
-   else:
-      model = ResNet(num_classes=2**len(selected_idx)).to(DEVICE)
-      model.load_state_dict(torch.load(model_name))
-   model.eval()
-   return model
+# def classifier_loader(train_dataset_original, test_dataset_original, selected_idx = [], DEVICE = 'cuda'):
+   
+#     classifier = CelebA_ResNet_classifier(energy_based_model, ds_loaders = [], num_epochs = 20, learning_rate = 0.001, filename='')
+
+#    Load_classifier = int(input('do you want to load a classifier or train it from scratch? (1=load, 0=train)'))
+#    if selected_idx == []:
+#       num_classes = 40
+#    else:
+#       num_classes = 2**len(selected_idx)
+#    Zambra_folder_drive = '/content/gdrive/My Drive/ZAMBRA_DBN/'
+#    model_name = Zambra_folder_drive+'resnet_'+str(num_classes)+'classes.pt'
+#    if Load_classifier ==0:
+#       train_dataloader = Multiclass_dataset(train_dataset_original, selected_idx = selected_idx, for_classifier = True)
+#       test_dataloader = Multiclass_dataset(test_dataset_original, selected_idx = selected_idx, for_classifier = True)
+#       model = main(train_dataloader, test_dataloader, num_classes=num_classes)
+#       torch.save(model.state_dict(), model_name)
+#    else:
+#       model = ResNet(num_classes=2**len(selected_idx)).to(DEVICE)
+#       model.load_state_dict(torch.load(model_name))
+#    model.eval()
+#    return model
 
 def compute_inverseW_for_lblBiasing_ZAMBRA(model,train_dataset, L=[]):
 
