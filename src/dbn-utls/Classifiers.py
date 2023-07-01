@@ -385,11 +385,11 @@ def classification_metrics(dict_classifier,model,test_labels=[], Plot=1, dS = 30
 
     df_average.at[digit,'Nr_visited_states'] = round(sum(nr_visited_states_list)/len(nr_visited_states_list),2)
     df_average.at[digit,'Nr_transitions'] = round(sum(nr_transitions_list)/len(nr_transitions_list),2)
-    df_average.iloc[digit,2:] = torch.round(torch.mean(to_digits_mat,0),decimals=2)
+    df_average.iloc[digit,2:] = torch.round(torch.mean(to_digits_mat.cpu(),0),decimals=2)
 
     df_sem.at[digit,'Nr_visited_states'] = round(np.std(nr_visited_states_list)/math.sqrt(len(nr_visited_states_list)),2)
     df_sem.at[digit,'Nr_transitions'] = round(np.std(nr_transitions_list)/math.sqrt(len(nr_transitions_list)),2)
-    df_sem.iloc[digit,2:] = torch.round(torch.std(to_digits_mat,0)/math.sqrt(to_digits_mat.size()[0]),decimals=2)
+    df_sem.iloc[digit,2:] = torch.round(torch.std(to_digits_mat.cpu(),0)/math.sqrt(to_digits_mat.size()[0]),decimals=2)
   
   #ratio tra passaggi alla classe giusta e la seconda classe di più alta frequenza
   # to_mat = df_average.iloc[:, 2:-1]
