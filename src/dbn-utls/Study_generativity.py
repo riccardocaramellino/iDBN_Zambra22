@@ -238,6 +238,10 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000,  selected_idx = [], half_d
         print('train_dataset shape: '+ str(train_dataset['labels'].shape))
         test_dataset = Multiclass_dataset(test_dataset_original, selected_idx = selected_idx)
         print('test_dataset shape: '+ str(test_dataset['labels'].shape))
+  else:
+    train_dataset = train_dataset_original
+    test_dataset = test_dataset_original
+     
 
     #HALF DATA è Provvisorio
   if only_data:
