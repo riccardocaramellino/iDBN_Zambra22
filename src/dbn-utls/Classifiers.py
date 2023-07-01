@@ -159,6 +159,8 @@ def CelebA_ResNet_classifier(ds_loaders = [], num_classes = 4, num_epochs = 20, 
             print('Epoch [{}/{}], Train Loss: {:.4f}, Train Acc: {:.4f}, Val Loss: {:.4f}, Val Acc: {:.4f}'
                 .format(epoch+1, num_epochs, train_loss, train_acc, val_loss, val_acc))
             
+        torch.save(classifier.state_dict(), Zambra_folder_drive+filename) 
+            
     return classifier
 
 
