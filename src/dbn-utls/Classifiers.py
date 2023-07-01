@@ -462,7 +462,7 @@ def classification_metrics(dict_classifier,model,test_labels=[], Plot=1, dS = 30
 
 def StateTimePlot(Trans_nr, T_mat_labels, lS=25):
         plt.figure(figsize=(15, 15))
-        ax = sns.heatmap(Trans_nr, linewidth=0.5, annot=True, annot_kws={"size": lS}, square=True, cbar_kws={"shrink": .82},fmt='.1f', cmap='jet')
+        ax = sns.heatmap(Trans_nr.cpu(), linewidth=0.5, annot=True, annot_kws={"size": lS}, square=True, cbar_kws={"shrink": .82},fmt='.1f', cmap='jet')
         if T_mat_labels==[]:
            T_mat_labels = [str(i) for i in range(len(Trans_nr))]
            ax.set_yticklabels(T_mat_labels)
@@ -481,7 +481,7 @@ def StateTimePlot(Trans_nr, T_mat_labels, lS=25):
 def Transition_mat_plot(Transition_matrix_rowNorm,T_mat_labels=[], lS=25):
       plt.figure(figsize=(15, 15))
       Transition_matrix=Transition_matrix_rowNorm*100
-      ax = sns.heatmap(torch.round(Transition_matrix, decimals=2), linewidth=0.5, annot=True, annot_kws={"size": lS},square=True,cbar_kws={"shrink": .82}, fmt='.1f', cmap='jet')
+      ax = sns.heatmap(torch.round(Transition_matrix.cpu(), decimals=2), linewidth=0.5, annot=True, annot_kws={"size": lS},square=True,cbar_kws={"shrink": .82}, fmt='.1f', cmap='jet')
       plt.xlabel('To', fontsize = 25) # x-axis label with fontsize 15
       plt.ylabel('From', fontsize = 25) # y-axis label with fontsize 15
       if T_mat_labels==[]:
