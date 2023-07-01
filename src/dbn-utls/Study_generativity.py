@@ -88,7 +88,8 @@ def load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive):
                           threshold = threshold_sauvola(img_to_store,window_size=7, k=0.05)
                           img_to_store = img_to_store > threshold
                         train_data[idx, i, :] = torch.from_numpy(img_to_store.reshape(-1).astype(np.float32))
-                    
+                  if len(labels.shape)==1:
+                     labels = labels.unsqueeze(1)
                   train_labels[idx, :, :] = labels.type(torch.float32)
         return train_data, train_labels   
       
