@@ -462,7 +462,7 @@ def classification_metrics(dict_classifier,model,test_labels=[], Plot=1, dS = 30
 
 def StateTimePlot(Trans_nr, T_mat_labels, lS=25):
         plt.figure(figsize=(15, 15))
-        ax = sns.heatmap(Trans_nr.cpu(), linewidth=0.5, annot=True, annot_kws={"size": lS}, square=True, cbar_kws={"shrink": .82},fmt='.1f', cmap='jet')
+        ax = sns.heatmap(Trans_nr, linewidth=0.5, annot=True, annot_kws={"size": lS}, square=True, cbar_kws={"shrink": .82},fmt='.1f', cmap='jet')
         if T_mat_labels==[]:
            T_mat_labels = [str(i) for i in range(len(Trans_nr))]
            ax.set_yticklabels(T_mat_labels)
