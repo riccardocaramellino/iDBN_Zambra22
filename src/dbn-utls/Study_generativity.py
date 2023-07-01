@@ -10,10 +10,10 @@ import scipy
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import math
-import VGG_MNIST
+import Classifiers
 import methods
 import ResNet_utils
-from VGG_MNIST import *
+from Classifiers import *
 from methods import *
 from ResNet_utils import *
 from google.colab import files

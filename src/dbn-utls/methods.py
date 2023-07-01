@@ -31,12 +31,9 @@ def label_biasing(model, on_digits=1, topk = 149):
 
         return gen_hidden
 
-def generate_from_hidden(model, input_hid_prob , nr_gen_steps, temperature=1, consider_top_k_units = 1000, include_energy = 0):
+def generate_from_hidden(model, input_hid_prob , nr_gen_steps, temperature=1, include_energy = 0):
 
-    if isinstance(temperature, list): #if we have a list of temperatures...
-        n_times = math.ceil(nr_gen_steps/len(temperature))
-        temperature = temperature*n_times
-
+    img_side = int(np.sqrt(model.vishid.shape[0]))
     #input_hid_prob has size Nr_hidden_units x num_cases. Therefore i transpose it
     input_hid_prob = torch.transpose(input_hid_prob,0,1)
 
@@ -47,10 +44,11 @@ def generate_from_hidden(model, input_hid_prob , nr_gen_steps, temperature=1, co
     hid_prob = torch.zeros(numcases,hidden_layer_size, nr_gen_steps, device=model.DEVICE)
     hid_states = torch.zeros(numcases,hidden_layer_size, nr_gen_steps, device=model.DEVICE)
 
-    vis_prob = torch.zeros(numcases, 784, nr_gen_steps, device=model.DEVICE)
-    vis_states = torch.zeros(numcases ,784, nr_gen_steps, device=model.DEVICE)
+    vis_prob = torch.zeros(numcases, img_side*img_side, nr_gen_steps, device=model.DEVICE)
+    vis_states = torch.zeros(numcases ,img_side*img_side, nr_gen_steps, device=model.DEVICE)
 
     Energy_matrix = torch.zeros(numcases, nr_gen_steps, device=model.DEVICE)
+
 
     for step in range(0,nr_gen_steps):
         
@@ -67,22 +65,7 @@ def generate_from_hidden(model, input_hid_prob , nr_gen_steps, temperature=1, co
                 hid_prob[:,:,step]  = torch.sigmoid(hid_activation/temperature)
 
             if model.Hidden_mode=='binary': #If the hidden layer is set to be binary...
-
-                if consider_top_k_units < hidden_layer_size: #if we want to consider just the top k units in the hidden layer...
-
-                    #get the indices (idxs) of the smallest (i.e., least probable) units in hid_prob[:,:,step]
-                    #Idxs size: numcases x (hidden_layer_size - consider_top_k_units)
-                    vs, idxs = torch.topk(hid_prob[:,:,step], (hidden_layer_size - consider_top_k_units), largest = False) 
-
-                    b = copy.deepcopy(hid_prob[:,:,step]) # b is a deepcopy of the original hid_prob[:,:,step]
-
-
-                    for row in range(numcases): # for every sample of b...
-                        b[row, idxs[row,:]]=0 #set the indices of the smallest (hidden_layer_size - consider_top_k_units) units to 0
-
-                    hid_states[:,:,step] = torch.bernoulli(b) #do the bernoullian sampling
-                else:
-                    hid_states[:,:,step] = torch.bernoulli(hid_prob[:,:,step]) #do the bernoullian sampling
+                hid_states[:,:,step] = torch.bernoulli(hid_prob[:,:,step]) #do the bernoullian sampling
             else:
                 hid_states[:,:,step] = hid_prob[:,:,step] #if the hidden layer is set to be continous, avoid the bernoullian sampling
 
@@ -122,10 +105,13 @@ def generate_from_hidden(model, input_hid_prob , nr_gen_steps, temperature=1, co
 
     return result_dict
 
-def Plot_example_generated(input_dict, model,row_step = 10, dS=20, custom_steps = True, Show_classification = False, not_random_idxs = True):
+def Plot_example_generated(input_dict,row_step = 10, dS=20, custom_steps = True, Show_classification = False, not_random_idxs = True):
     
     Generated_samples=input_dict['vis_states']
     nr_steps = Generated_samples.shape[2]
+
+    img_side = int(np.sqrt(Generated_samples.shape[1]))
+
 
     if Show_classification ==True:
       Classifications = input_dict['Cl_pred_matrix']
@@ -161,7 +147,7 @@ def Plot_example_generated(input_dict, model,row_step = 10, dS=20, custom_steps 
         # plotto la ricostruzione dopo uno step
 
         reconstructed_img= Generated_samples[sample_idx,:,0] #estraggo la prima immagine ricostruita per il particolare esempio (lbl può essere un nome un po fuorviante)
-        reconstructed_img = reconstructed_img.view((28,28)).cpu() #ridimensiono l'immagine e muovo su CPU
+        reconstructed_img = reconstructed_img.view((img_side,img_side)).cpu() #ridimensiono l'immagine e muovo su CPU
         axis[0, c].tick_params(left = False, right = False , labelleft = False ,
             labelbottom = False, bottom = False)
         axis[0, c].imshow(reconstructed_img , cmap = 'gray')
@@ -181,7 +167,7 @@ def Plot_example_generated(input_dict, model,row_step = 10, dS=20, custom_steps 
             #plotto la ricostruzione
 
             reconstructed_img= Generated_samples[sample_idx,:,step-1] #step-1 perchè 0 è la prima ricostruzione
-            reconstructed_img = reconstructed_img.view((28,28)).cpu()
+            reconstructed_img = reconstructed_img.view((img_side,img_side)).cpu()
             axis[idx, c].tick_params(left = False, right = False , labelleft = False ,
             labelbottom = False, bottom = False)
             axis[idx, c].imshow(reconstructed_img , cmap = 'gray')
@@ -210,5 +196,6 @@ def Plot_example_generated(input_dict, model,row_step = 10, dS=20, custom_steps 
     #plt.savefig("Reconstuct_plot.jpg") #il salvataggio è disabilitato
 
     plt.show()
+
 
 

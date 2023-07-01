@@ -6,8 +6,8 @@ import torch.optim as optim
 import math
 import numpy as np
 import matplotlib.pyplot as plt
-import VGG_MNIST
-from VGG_MNIST import *
+import Classifiers
+from Classifiers import *
 import Study_generativity
 from Study_generativity import *
 
