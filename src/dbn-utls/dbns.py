@@ -22,7 +22,7 @@ class NonLinear(torch.nn.Linear):
 
 class DBN(torch.nn.Module):
     
-    def __init__(self, alg_name, dataset_id, init_scheme, path_model, epochs, top_layer_size = 2000):
+    def __init__(self, alg_name, dataset_id, init_scheme, path_model, epochs):
         super(DBN, self).__init__()
         
         if dataset_id == 'MNIST':
@@ -35,7 +35,7 @@ class DBN(torch.nn.Module):
                          layer_id = 1,
                          init_scheme = init_scheme,
                          dataset_id = dataset_id),
-                rbms.RBM(500, top_layer_size, epochs,
+                rbms.RBM(500, 1000, epochs,
                          layer_id = 2, 
                          init_scheme = init_scheme, 
                          dataset_id = dataset_id)
@@ -78,7 +78,7 @@ class DBN(torch.nn.Module):
         self.init_scheme = init_scheme
         self.dataset_id = dataset_id
         self.path_model = path_model
-        self.top_layer_size = top_layer_size
+        self.top_layer_size = self.rbm_layers[-1].Nout
     #end
     
     def forward(self, v, only_forward = False):
@@ -170,8 +170,8 @@ class gDBN(DBN):
 
 class iDBN(DBN):
     
-    def __init__(self, alg_name, dataset_id, init_scheme, path_model, epochs, top_layer_size = 2000):
-        super(iDBN, self).__init__(alg_name, dataset_id, init_scheme, path_model, epochs, top_layer_size)
+    def __init__(self, alg_name, dataset_id, init_scheme, path_model, epochs):
+        super(iDBN, self).__init__(alg_name, dataset_id, init_scheme, path_model, epochs)
         
         self.algo = 'i'
     #end

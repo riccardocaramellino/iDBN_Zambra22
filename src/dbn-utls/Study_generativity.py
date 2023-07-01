@@ -196,7 +196,7 @@ def Multiclass_dataset(train_dataset, selected_idx = [20,31], for_classifier = F
 
 
 
-def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000,  selected_idx = [], half_data=False, only_data = True):
+def tool_loader_ZAMBRA(DEVICE,  selected_idx = [], half_data=False, only_data = True):
   from google.colab import drive
   drive.mount('/content/gdrive')
   Zambra_folder_drive = '/content/gdrive/My Drive/ZAMBRA_DBN/'
@@ -283,7 +283,7 @@ def tool_loader_ZAMBRA(DEVICE, top_layer_size = 2000,  selected_idx = [], half_d
             dbn.train(Xtrain, Xtest, Ytrain, Ytest, LPARAMS, readout = READOUT)
         elif ALG_NAME == 'i':
             
-            dbn = iDBN(ALG_NAME, DATASET_ID, INIT_SCHEME, PATH_MODEL, EPOCHS, top_layer_size = top_layer_size).to(DEVICE)
+            dbn = iDBN(ALG_NAME, DATASET_ID, INIT_SCHEME, PATH_MODEL, EPOCHS).to(DEVICE)
             dbn.train(Xtrain, Xtest, Ytrain, Ytest, LPARAMS, readout = READOUT, num_discr = NUM_DISCR)
         elif ALG_NAME == 'fs':
             
