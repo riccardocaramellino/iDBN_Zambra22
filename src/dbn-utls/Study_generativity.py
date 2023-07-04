@@ -332,20 +332,26 @@ def tool_loader_ZAMBRA(DEVICE,  selected_idx = [], half_data=False, only_data = 
     else:
       Num_classes = 40
     dbn = torch.load(os.path.join(Zambra_folder_drive, 'dbn_iterative_normal_'+DATASET_ID+'_run0_'+str(Num_classes)+'classes.pkl'))
-  
-  return dbn,train_dataset_original, test_dataset_original
+  classifier = classifier_loader(dbn,train_dataset_original, test_dataset_original, selected_idx = selected_idx, DEVICE = 'cuda')
+  return dbn,train_dataset_original, test_dataset_original,classifier
 
-def classifier_loader(train_dataset_original, test_dataset_original, selected_idx = [], DEVICE = 'cuda'):
-   Load_classifier = int(input('do you want to load a classifier or train it from scratch? (1=load, 0=train)'))
-   num_classes = 2**len(selected_idx)
-   fname = 'resnet_'+str(num_classes)+'classes.pt'
-
-   if Load_classifier ==0:
-      train_dataloader = Multiclass_dataset(train_dataset_original, selected_idx = selected_idx, for_classifier = True, Old_rbm=False, DEVICE ='cuda')
-      test_dataloader = Multiclass_dataset(test_dataset_original, selected_idx = selected_idx, for_classifier = True, Old_rbm=False, DEVICE ='cuda')
-      classifier = CelebA_ResNet_classifier(ds_loaders = [train_dataloader, test_dataloader], num_classes = num_classes,  num_epochs = 20, learning_rate = 0.001, filename=fname)
+def classifier_loader(dbn,train_dataset_original, test_dataset_original, selected_idx = [], DEVICE = 'cuda'):
+   if dbn.dataset_id == 'MNIST':
+      classifier = VGG16((1,32,32), batch_norm=True).to(DEVICE) #creo un'istanza del classificatore in cui poi caricherò i parametri salvati
+      PATH = '/content/gdrive/My Drive/VGG16_MNIST/VGG16_MNIST_best_val.pth'
+      classifier.load_state_dict(torch.load(PATH))
    else:
-      classifier = CelebA_ResNet_classifier(ds_loaders = [], filename=fname)
+      Load_classifier = int(input('do you want to load a classifier or train it from scratch? (1=load, 0=train)'))
+      num_classes = 2**len(selected_idx)
+      fname = 'resnet_'+str(num_classes)+'classes.pt'
+
+      if Load_classifier ==0:
+          train_dataloader = Multiclass_dataset(train_dataset_original, selected_idx = selected_idx, for_classifier = True, Old_rbm=False, DEVICE ='cuda')
+          test_dataloader = Multiclass_dataset(test_dataset_original, selected_idx = selected_idx, for_classifier = True, Old_rbm=False, DEVICE ='cuda')
+          classifier = CelebA_ResNet_classifier(ds_loaders = [train_dataloader, test_dataloader], num_classes = num_classes,  num_epochs = 20, learning_rate = 0.001, filename=fname)
+      else:
+          classifier = CelebA_ResNet_classifier(ds_loaders = [], filename=fname)
+
    classifier.eval()
    return classifier
 
