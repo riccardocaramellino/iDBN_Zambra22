@@ -199,70 +199,70 @@ def Plot_example_generated(input_dict,row_step = 10, dS=20, custom_steps = True,
     plt.show()
 
 def comparisons_plot(Results_dict, sel_key='Nr_visited_states_MEAN'):
-  # parametri grafici
-  LineW = 4
-  Mk = 's'
-  Mk_sz = 12
-  Cp_sz = 12
-  Err_bar_sz = 4
-  Scritte_sz = 50
+    # parametri grafici
+    LineW = 4
+    Mk = 's'
+    Mk_sz = 12
+    Cp_sz = 12
+    Err_bar_sz = 4
+    Scritte_sz = 50
 
-  # Define the two lists of four numbers
-  MNIST = np.array(Results_dict['MNIST'][sel_key])
-  CelebA =  np.array(Results_dict['CelebA_BW'][sel_key])
+    # Define the two lists of four numbers
+    MNIST = np.array(Results_dict['MNIST'][sel_key])
+    CelebA =  np.array(Results_dict['CelebA_BW'][sel_key])
 
-  # Define the two lists of four SEMs
-  if sel_key=='Nr_visited_states_MEAN':
-    MNIST_sem =  np.array(Results_dict['MNIST']['Nr_visited_states_SEM'])
-    CelebA_sem =  np.array(Results_dict['CelebA_BW']['Nr_visited_states_SEM'])
-    # Create a list of the x-axis labels
-    x_labels = ['LB', 'C_2LB', 'C_int']
-    x_lab = 'Generation method'
-    y_lab = 'Number of states'
-    y_r = [1,5]
-  else:
-    # Create a list of the x-axis labels
-    x_labels = ['V', 'H1', 'H2', 'H3']
-    x_lab = 'Layer'
-    y_lab = 'Accuracy'
-    y_r = [0.5,1]
+    # Define the two lists of four SEMs
+    if sel_key=='Nr_visited_states_MEAN':
+      MNIST_sem =  np.array(Results_dict['MNIST']['Nr_visited_states_SEM'])
+      CelebA_sem =  np.array(Results_dict['CelebA_BW']['Nr_visited_states_SEM'])
+      # Create a list of the x-axis labels
+      x_labels = ['LB', 'C_2LB', 'C_int']
+      x_lab = 'Generation method'
+      y_lab = 'Number of states'
+      y_r = [1,5]
+    else:
+      # Create a list of the x-axis labels
+      x_labels = ['V', 'H1', 'H2', 'H3']
+      x_lab = 'Layer'
+      y_lab = 'Accuracy'
+      y_r = [0.5,1]
 
-  # Create a new figure and axis object
-  fig, ax = plt.subplots(figsize=(15, 15))
+    # Create a new figure and axis object
+    fig, ax = plt.subplots(figsize=(15, 15))
 
-  # Plot the first line
-  line1, = ax.plot(x_labels, MNIST, color='blue', label='MNIST', linewidth=LineW, marker=Mk, markersize=Mk_sz)
-  # Plot the second line
-  line2, = ax.plot(x_labels, CelebA, color='red', label='CelebA', linewidth=LineW, marker=Mk, markersize=Mk_sz)
-  if  sel_key=='Nr_visited_states_MEAN':
-     # Add error bars to the first line
-    ax.errorbar(x_labels, MNIST, yerr=MNIST_sem, fmt='none', ecolor='blue', capsize=Cp_sz, elinewidth=Err_bar_sz)
-    # Add error bars to the second line
-    ax.errorbar(x_labels, CelebA, yerr=CelebA_sem, fmt='none', ecolor='red', capsize=Cp_sz,  elinewidth=Err_bar_sz)
+    # Plot the first line
+    line1, = ax.plot(x_labels, MNIST, color='blue', label='MNIST', linewidth=LineW, marker=Mk, markersize=Mk_sz)
+    # Plot the second line
+    line2, = ax.plot(x_labels, CelebA, color='red', label='CelebA', linewidth=LineW, marker=Mk, markersize=Mk_sz)
+    if  sel_key=='Nr_visited_states_MEAN':
+      # Add error bars to the first line
+      ax.errorbar(x_labels, MNIST, yerr=MNIST_sem, fmt='none', ecolor='blue', capsize=Cp_sz, elinewidth=Err_bar_sz)
+      # Add error bars to the second line
+      ax.errorbar(x_labels, CelebA, yerr=CelebA_sem, fmt='none', ecolor='red', capsize=Cp_sz,  elinewidth=Err_bar_sz)
 
-  # Set the x-axis label
-  ax.set_xlabel(x_lab, fontsize=Scritte_sz)
+    # Set the x-axis label
+    ax.set_xlabel(x_lab, fontsize=Scritte_sz)
 
-  # Set the y-axis label
-  ax.set_ylabel(y_lab, fontsize=Scritte_sz)
+    # Set the y-axis label
+    ax.set_ylabel(y_lab, fontsize=Scritte_sz)
 
-  # Set the font size of all the text in the plot
-  plt.rc('font', size=Scritte_sz)
+    # Set the font size of all the text in the plot
+    plt.rc('font', size=Scritte_sz)
 
-  # Set the y-axis range
-  ax.set_ylim(y_r)
+    # Set the y-axis range
+    ax.set_ylim(y_r)
 
-  # Set the legend position and font size
-  ax.legend(handles=[line1, line2], loc='upper center', bbox_to_anchor=(0.5, 0.3), fontsize=Scritte_sz)
+    # Set the legend position and font size
+    ax.legend(handles=[line1, line2], loc='upper center', bbox_to_anchor=(0.5, 0.3), fontsize=Scritte_sz)
 
-  # Set the x-axis tick font size
-  ax.tick_params(axis='x', labelsize=Scritte_sz)
+    # Set the x-axis tick font size
+    ax.tick_params(axis='x', labelsize=Scritte_sz)
 
-  # Set the y-axis tick font size
-  ax.tick_params(axis='y', labelsize=Scritte_sz)
+    # Set the y-axis tick font size
+    ax.tick_params(axis='y', labelsize=Scritte_sz)
 
-  # Display the plot
-  plt.show()
+    # Display the plot
+    plt.show()
 
 
 
