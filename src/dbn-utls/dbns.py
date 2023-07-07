@@ -58,35 +58,38 @@ class DBN(torch.nn.Module):
             ]
 
         if 'CelebA' in dataset_id:
-            # self.rbm_layers = [
-            #     rbms.RBM(4096, 2500, epochs,
-            #              layer_id = 0,  
-            #              init_scheme = init_scheme,
-            #              dataset_id = dataset_id),
-            #     rbms.RBM(2500, 2500, epochs,
-            #              layer_id = 1,
-            #              init_scheme = init_scheme,
-            #              dataset_id = dataset_id),                      
-            #     rbms.RBM(2500, 4500, epochs, #dovrebbe essere 5250
-            #              layer_id = 2, 
-            #              init_scheme = init_scheme, 
-            #              dataset_id = dataset_id)
-            # ]
-            self.rbm_layers = [
-                rbms.RBM(4096, 500, epochs,
-                         layer_id = 0,  
-                         init_scheme = init_scheme,
-                         dataset_id = dataset_id),
-                rbms.RBM(500, 500, epochs,
-                         layer_id = 1,
-                         init_scheme = init_scheme,
-                         dataset_id = dataset_id),                      
-                rbms.RBM(500, 1000, epochs, #dovrebbe essere 5250
-                         layer_id = 2, 
-                         init_scheme = init_scheme, 
-                         dataset_id = dataset_id)
-            ]
-        #end            
+            Arch_MNIST = int(input('vuoi architettura come MNIST (1=si, 0 = no)'))
+            if Arch_MNIST == 0:
+                self.rbm_layers = [
+                    rbms.RBM(4096, 2500, epochs,
+                            layer_id = 0,  
+                            init_scheme = init_scheme,
+                            dataset_id = dataset_id),
+                    rbms.RBM(2500, 2500, epochs,
+                            layer_id = 1,
+                            init_scheme = init_scheme,
+                            dataset_id = dataset_id),                      
+                    rbms.RBM(2500, 5250, epochs, 
+                            layer_id = 2, 
+                            init_scheme = init_scheme, 
+                            dataset_id = dataset_id)
+                ]
+            else:
+                self.rbm_layers = [
+                    rbms.RBM(4096, 500, epochs,
+                            layer_id = 0,  
+                            init_scheme = init_scheme,
+                            dataset_id = dataset_id),
+                    rbms.RBM(500, 500, epochs,
+                            layer_id = 1,
+                            init_scheme = init_scheme,
+                            dataset_id = dataset_id),                      
+                    rbms.RBM(500, 1000, epochs, #dovrebbe essere 5250
+                            layer_id = 2, 
+                            init_scheme = init_scheme, 
+                            dataset_id = dataset_id)
+                ]
+            #end            
         
         self.alg_name = alg_name
         self.init_scheme = init_scheme
