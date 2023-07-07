@@ -222,6 +222,8 @@ def tool_loader_ZAMBRA(DEVICE,  selected_idx = [], half_data=False, only_data = 
   EPOCHS         = LPARAMS['EPOCHS']
 
   train_dataset_original, test_dataset_original = load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive)
+  BATCH_SIZE = train_dataset_original['data'].shape[1]
+  print('BATCH_SIZE '+ str(BATCH_SIZE))
   if 'CelebA' in DATASET_ID:
     if selected_idx == []:
         nrEx = train_dataset_original['labels'].shape[0] #usare
@@ -318,7 +320,7 @@ def tool_loader_ZAMBRA(DEVICE,  selected_idx = [], half_data=False, only_data = 
         else:
           dbn.Num_classes = 40
           compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset, L = train_dataset['labels'])
-        name = name +'_'+str(dbn.Num_classes)+'classes_nEp'+str(EPOCHS)+'_nL'+str(len(dbn.rbm_layers))+'_lastL'+str(dbn.top_layer_size)
+        name = name +'_'+str(dbn.Num_classes)+'classes_nEp'+str(EPOCHS)+'_nL'+str(len(dbn.rbm_layers))+'_lastL'+str(dbn.top_layer_size)+'_bsz'+str(BATCH_SIZE)
         torch.save(dbn.to(torch.device('cpu')),
                     open(os.path.join(Zambra_folder_drive, f'{name}.pkl'), 'wb'))
     #end
@@ -334,7 +336,7 @@ def tool_loader_ZAMBRA(DEVICE,  selected_idx = [], half_data=False, only_data = 
     else:
       Num_classes = 40
 
-    dbn = torch.load(os.path.join(Zambra_folder_drive, 'dbn_iterative_normal_'+DATASET_ID+'_'+str(Num_classes)+'classes_nEp'+str(EPOCHS)+'_nL'+str(nL)+'_lastL'+last_layer_sz+'.pkl'))
+    dbn = torch.load(os.path.join(Zambra_folder_drive, 'dbn_iterative_normal_'+DATASET_ID+'_'+str(Num_classes)+'classes_nEp'+str(EPOCHS)+'_nL'+str(nL)+'_lastL'+last_layer_sz+'_bsz'+str(BATCH_SIZE)+'.pkl'))
   classifier = classifier_loader(dbn,train_dataset_original, test_dataset_original, selected_idx = selected_idx, DEVICE = 'cuda')
   return dbn,train_dataset_original, test_dataset_original,classifier
 
