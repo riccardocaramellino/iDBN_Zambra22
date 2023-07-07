@@ -801,3 +801,50 @@ def Plot_example_generated(input_dict, model,row_step = 10, dS=20, custom_steps 
     #plt.savefig("Reconstuct_plot.jpg") #il salvataggio è disabilitato
 
     plt.show()
+
+
+
+def readout_V_to_Hlast(dbn,train_dataset,test_dataset, DEVICE='cuda'):
+  if 'CelebA' in dbn.dataset_id:
+    train_dataset = Multiclass_dataset(train_dataset, selected_idx= [20,31])
+    test_dataset = Multiclass_dataset(test_dataset, selected_idx = [20,31])
+
+  Xtrain = train_dataset['data'].to(DEVICE)
+  Xtest  = test_dataset['data'].to(DEVICE)
+  Ytrain = train_dataset['labels'].to(DEVICE)
+  Ytest  = test_dataset['labels'].to(DEVICE)
+  readout_acc_V =[]
+
+  n_train_batches = Xtrain.shape[0]
+  n_test_batches = Xtest.shape[0]
+  batch_size = Xtrain.shape[1]
+
+  readout_acc = dbn.rbm_layers[1].get_readout(Xtrain, Xtest, Ytrain, Ytest)
+  print(f'Readout accuracy = {readout_acc*100:.2f}')
+  readout_acc_V.append(readout_acc)
+  for rbm in dbn.rbm_layers:
+
+      _Xtrain = torch.zeros((n_train_batches, batch_size, rbm.Nout))
+      _Xtest = torch.zeros((n_test_batches, batch_size, rbm.Nout))
+
+      _Xtest, _ = rbm(Xtest)
+
+      batch_indices = list(range(n_train_batches))
+      random.shuffle(batch_indices)
+      with tqdm(batch_indices, unit = 'Batch') as tlayer:
+          for idx, n in enumerate(tlayer):
+
+              tlayer.set_description(f'Layer {rbm.layer_id}')
+              _Xtrain[n,:,:], _ = rbm(Xtrain[n,:,:])
+
+          #end BATCHES
+      #end WITH
+
+      readout_acc = rbm.get_readout(_Xtrain, _Xtest, Ytrain, Ytest)
+      print(f'Readout accuracy = {readout_acc*100:.2f}')
+      #end
+      readout_acc_V.append(readout_acc)
+
+      Xtrain = _Xtrain.clone()
+      Xtest  = _Xtest.clone()
+  return readout_acc_V
