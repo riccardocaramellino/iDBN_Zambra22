@@ -56,8 +56,8 @@ def load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive):
               if not(train_dataset['data'].shape[0]%n==0):
                   train_dataset['data'] = train_dataset['data'][:-1,:,:]
                   train_dataset['labels'] = train_dataset['labels'][:-1,:,:]
-              train_dataset['data'] = train_dataset['data'].view(train_dataset['data'].shape[0], BATCH_SIZE, train_dataset['data'].shape[2])
-              train_dataset['labels'] = train_dataset['labels'].view(train_dataset['labels'].shape[0], BATCH_SIZE, train_dataset['labels'].shape[2])
+              train_dataset['data'] = train_dataset['data'].view(train_dataset['data'].shape[0]//n, BATCH_SIZE, train_dataset['data'].shape[2])
+              train_dataset['labels'] = train_dataset['labels'].view(train_dataset['labels'].shape[0]//n, BATCH_SIZE, train_dataset['labels'].shape[2])
               return train_dataset
           train_dataset = reshape_data(train_dataset, Real_BATCH_SIZE, BATCH_SIZE)
           test_dataset = reshape_data(test_dataset, Real_BATCH_SIZE, BATCH_SIZE)
