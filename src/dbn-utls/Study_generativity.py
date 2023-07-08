@@ -374,7 +374,7 @@ def classifier_loader(dbn,train_dataset_original, test_dataset_original, selecte
           test_dataloader = Multiclass_dataset(test_dataset_original, selected_idx = selected_idx, for_classifier = True, Old_rbm=False, DEVICE ='cuda')
           classifier = CelebA_ResNet_classifier(ds_loaders = [train_dataloader, test_dataloader], num_classes = num_classes,  num_epochs = 20, learning_rate = 0.001, filename=fname)
       else:
-          classifier = CelebA_ResNet_classifier(ds_loaders = [], filename=fname)
+          classifier = CelebA_ResNet_classifier(ds_loaders = [],  num_classes = num_classes, filename=fname)
 
    classifier.eval()
    return classifier
