@@ -138,7 +138,7 @@ class MyDataset(Dataset):
         return feature, label
 
 def Multiclass_dataset(train_dataset, selected_idx = [20,31], for_classifier = False, Old_rbm=False, DEVICE ='cuda'):
-
+  Batch_size = train_dataset['data'].shape[1]
   Train_data = copy.deepcopy(train_dataset['data']).to(DEVICE)
   if not(selected_idx==[]):
     Train_labels = copy.deepcopy(train_dataset['labels'][:,:,selected_idx]).to(DEVICE)
@@ -196,11 +196,11 @@ def Multiclass_dataset(train_dataset, selected_idx = [20,31], for_classifier = F
   elif Old_rbm==False:
     new_Train_data = torch.squeeze(new_Train_data,1)
     new_Train_data = new_Train_data.view(new_Train_data.shape[0],new_Train_data.shape[1]*new_Train_data.shape[2])
-    num_batches = new_Train_data.__len__() // 64
-    new_Train_data = new_Train_data[:(num_batches*64),:]
-    new_Train_data = new_Train_data.view(num_batches,64,new_Train_data.shape[1])
-    new_Cat_labels = new_Cat_labels[:(num_batches*64)]
-    new_Cat_labels = new_Cat_labels.view(num_batches,64,1)
+    num_batches = new_Train_data.__len__() // Batch_size
+    new_Train_data = new_Train_data[:(num_batches*Batch_size),:]
+    new_Train_data = new_Train_data.view(num_batches,Batch_size,new_Train_data.shape[1])
+    new_Cat_labels = new_Cat_labels[:(num_batches*Batch_size)]
+    new_Cat_labels = new_Cat_labels.view(num_batches,Batch_size,1)
     train_dataset = {'data': new_Train_data, 'labels': new_Cat_labels}
     return train_dataset
   else:
