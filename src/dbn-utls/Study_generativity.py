@@ -334,9 +334,10 @@ def tool_loader_ZAMBRA(DEVICE,  selected_idx = [], half_data=False, only_data = 
         else:
           dbn.Num_classes = 40
           compute_inverseW_for_lblBiasing_ZAMBRA(dbn,train_dataset, L = train_dataset['labels'])
-        name = name +'_'+str(dbn.Num_classes)+'classes_nEp'+str(EPOCHS)+'_nL'+str(len(dbn.rbm_layers))+'_lastL'+str(dbn.top_layer_size)+'_bsz'+str(BATCH_SIZE)
+        fname = name +'_'+str(dbn.Num_classes)+'classes_nEp'+str(EPOCHS)+'_nL'+str(len(dbn.rbm_layers))+'_lastL'+str(dbn.top_layer_size)+'_bsz'+str(BATCH_SIZE)
+        dbn.fname = fname
         torch.save(dbn.to(torch.device('cpu')),
-                    open(os.path.join(Zambra_folder_drive, f'{name}.pkl'), 'wb'))
+                    open(os.path.join(Zambra_folder_drive, f'{fname}.pkl'), 'wb'))
     #end
   else:
     if not('CelebA' in DATASET_ID):
@@ -349,8 +350,12 @@ def tool_loader_ZAMBRA(DEVICE,  selected_idx = [], half_data=False, only_data = 
       last_layer_sz = input('dimensione dell ultimo layer?')
     else:
       Num_classes = 40
-
-    dbn = torch.load(os.path.join(Zambra_folder_drive, 'dbn_iterative_normal_'+DATASET_ID+'_'+str(Num_classes)+'classes_nEp'+str(EPOCHS)+'_nL'+str(nL)+'_lastL'+last_layer_sz+'_bsz'+str(BATCH_SIZE)+'.pkl'))
+    fname = 'dbn_iterative_normal_'+DATASET_ID+'_'+str(Num_classes)+'classes_nEp'+str(EPOCHS)+'_nL'+str(nL)+'_lastL'+last_layer_sz+'_bsz'+str(BATCH_SIZE)
+    dbn = torch.load(os.path.join(Zambra_folder_drive, fname+'.pkl'))
+    if not(hasattr(dbn, 'fname')):
+       dbn.fname = fname
+       torch.save(dbn.to(torch.device('cpu')), open(os.path.join(Zambra_folder_drive, f'{fname}.pkl'), 'wb'))
+       
   classifier = classifier_loader(dbn,train_dataset_original, test_dataset_original, selected_idx = selected_idx, DEVICE = 'cuda')
   return dbn,train_dataset_original, test_dataset_original,classifier
 
