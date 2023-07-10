@@ -261,7 +261,7 @@ def Classifier_accuracy(input_dict, classifier,model, Thresholding_entropy=[], l
         figure, axis = plt.subplots(2, 2, figsize=(20,15))
         Cl_plot(axis[0,0],x,acc,x_lab='Nr. of steps',y_lab='Classifier accuracy', lim_y = [0,1],Title = 'Classifier accuracy',l_sz=l_sz, dS= dS, color='g')
         Cl_plot(axis[0,1],x,MEAN_entropy,y_err = SEM_entropy,x_lab='Nr. of steps',y_lab='Entropy', lim_y = [0,1],Title = 'Average entropy',l_sz=l_sz, dS= dS, color='r')
-        Cl_plot_digitwise(axis[1,0],cl_lbls,x,digitwise_acc,x_lab='Generation step',y_lab='Accuracy',Num_classes=model.Num_classes, lim_y = [0,1],Title = 'Classifier accuracy - digitwise',l_sz=l_sz, dS= dS, cmap=cmap)
+        Cl_plot_digitwise(axis[1,0],cl_lbls,x,digitwise_acc,x_lab='Generation step',y_lab='Accuracy',Num_classes=model.Num_classes, lim_y = [0,1],l_sz=l_sz, dS= dS, cmap=cmap)
         Cl_plot_digitwise(axis[1,1],cl_lbls,x,digitwise_avg_entropy,digitwise_y_err=digitwise_sem_entropy,x_lab='Generation step',y_lab='Entropy',Num_classes=model.Num_classes, lim_y = [0,1],Title = 'Entropy - digitwise',l_sz=l_sz, dS= dS, cmap=cmap)
       else:
         figure, axis = plt.subplots(2, figsize=(10,15))
@@ -527,7 +527,7 @@ def Cl_plot_digitwise(axis,cl_lbls,x,digitwise_y,digitwise_y_err=[], Num_classes
   axis.set_ylabel(y_lab,fontsize=dS)
   axis.set_ylim(lim_y)
   axis.set_xlabel(x_lab,fontsize=dS)
-  axis.set_title(Title,fontsize=dS)
+  #axis.set_title(Title,fontsize=dS)
 
 def classification_metrics_ZAMBRA(dict_classifier,model,test_labels=[], Plot=1, dS = 30, rounding=2, T_mat_labels=[], Ian=0):
   '''
