@@ -556,7 +556,7 @@ class Intersection_analysis_ZAMBRA:
       self.result_dict_biasing = result_dict_biasing
 
       print(digit_digit_common_elements_count_biasing)
-      lbl_bias_freqV = digit_digit_common_elements_count_biasing.view(100)/torch.sum(digit_digit_common_elements_count_biasing.view(100))
+      #lbl_bias_freqV = digit_digit_common_elements_count_biasing.view(100)/torch.sum(digit_digit_common_elements_count_biasing.view(100))
 
       return digit_digit_common_elements_count_biasing
     
