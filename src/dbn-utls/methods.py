@@ -106,7 +106,7 @@ def generate_from_hidden(model, input_hid_prob , nr_gen_steps, temperature=1, in
 
     return result_dict
 
-def Plot_example_generated(input_dict,row_step = 10, dS=20, custom_steps = True, Show_classification = False, not_random_idxs = True):
+def Plot_example_generated(input_dict,num_classes = 10,row_step = 10, dS=50, lblpad = 110, custom_steps = True, Show_classification = False, not_random_idxs = True):
     
     Generated_samples=input_dict['vis_states']
     nr_steps = Generated_samples.shape[2]
@@ -118,26 +118,26 @@ def Plot_example_generated(input_dict,row_step = 10, dS=20, custom_steps = True,
       Classifications = input_dict['Cl_pred_matrix']
     
     if custom_steps == True:
-      steps=[2,3,4,5,10,25,50,100]
+      steps=[3,5,10,25,50,100]
       rows=len(steps)
     else:
       steps = range(row_step,nr_steps+1,row_step) #controlla che funzioni
       rows = math.floor(nr_steps/row_step) 
 
     cols = Generated_samples.shape[0]
-
-    if cols>10:
-      figure, axis = plt.subplots(rows+1,10, figsize=(25*(10/10),2.5*(1+rows)))
+    fig_side = 25/num_classes
+    if cols>num_classes:
+      figure, axis = plt.subplots(rows+1,num_classes, figsize=(25*(num_classes/num_classes),fig_side*(1+rows)))
     elif cols>1:
-      figure, axis = plt.subplots(rows+1,cols, figsize=(25*(cols/10),2.5*(1+rows)))
+      figure, axis = plt.subplots(rows+1,cols, figsize=(25*(cols/num_classes),fig_side*(1+rows)))
     else:
-      figure, axis = plt.subplots(rows+1,cols+1, figsize=(25*(cols/10),2.5*(1+rows)))
+      figure, axis = plt.subplots(rows+1,cols+1, figsize=(25*(cols/num_classes),fig_side*(1+rows)))
 
     if cols >= 10:
       if not_random_idxs ==True:
-        random_numbers = range(10)
+        random_numbers = range(num_classes)
       else:
-        random_numbers = random.sample(range(cols), 10) # 10 random samples are selected
+        random_numbers = random.sample(range(cols), num_classes) # 10 random samples are selected
     else:
       random_numbers = random.sample(range(cols), cols) # 10 random samples are selected
 
@@ -155,7 +155,7 @@ def Plot_example_generated(input_dict,row_step = 10, dS=20, custom_steps = True,
         if Show_classification==True:
           axis[0, c].set_title("Class {}".format(Classifications[sample_idx,0]), fontsize=dS)
         if c==0:
-          ylabel = axis[0, c].set_ylabel("Step {}".format(1), fontsize=dS,rotation=0, labelpad=70)
+          ylabel = axis[0, c].set_ylabel("Step {}".format(1), fontsize=dS,rotation=0, labelpad=lblpad)
 
         axis[0, c].set_xticklabels([])
         axis[0, c].set_yticklabels([])
@@ -176,7 +176,7 @@ def Plot_example_generated(input_dict,row_step = 10, dS=20, custom_steps = True,
               axis[idx, c].set_title("Class {}".format(Classifications[sample_idx,step-1]), fontsize=dS)
             #axis[idx, lbl].set_title("Step {}".format(step) , fontsize=dS)
             if c==0:
-              ylabel = axis[idx, c].set_ylabel("Step {}".format(step), fontsize=dS, rotation=0, labelpad=70)
+              ylabel = axis[idx, c].set_ylabel("Step {}".format(step), fontsize=dS, rotation=0, labelpad=lblpad)
               
 
 
