@@ -1,4 +1,5 @@
-from tqdm import tqdm
+from tqdm import tqdm #tqdm is a Python library that provides a way to create progress bars for loops and iterators, 
+#making it easier to track the progress of lengthy operations.
 import os
 import json
 import numpy as np
@@ -24,7 +25,8 @@ from copy import deepcopy
 def load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive):
     # Riassume il caricamento dei dati del CelebA nella repository di Zambra, evitando problemi ed errori
     DATASET_ID = CPARAMS['DATASET_ID']
-    n_cols_labels = 1
+    n_cols_labels = 1 # Initialize the number of label columns (e.g. 1 for MNIST)
+    # Determine the number of features based on DATASET_ID
     if DATASET_ID =='MNIST':
        NUM_FEAT= np.int32(28*28)
     elif DATASET_ID =='CIFAR10':
@@ -33,13 +35,14 @@ def load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive):
        NUM_FEAT= np.int32(64*64)
        n_cols_labels = 40
 
-
     BATCH_SIZE = LPARAMS['BATCH_SIZE']
+    # Create names for test and training data files
     test_filename = 'test_dataset_'+DATASET_ID+'.npz'
     train_filename = 'train_dataset_'+DATASET_ID+'.npz'
     trainfile_path= os.path.join(Zambra_folder_drive,'dataset_dicts',train_filename)
     testfile_path = os.path.join(Zambra_folder_drive,'dataset_dicts',test_filename)
 
+    # If the training file exists, load the data (both train and test)
     if os.path.exists(trainfile_path):
       train_dataset = dict(np.load(trainfile_path))
       test_dataset = dict(np.load(testfile_path))
@@ -47,21 +50,26 @@ def load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive):
       for key in train_dataset:
           train_dataset[key] = torch.from_numpy(train_dataset[key])
           test_dataset[key]= torch.from_numpy(test_dataset[key])
-      Real_BATCH_SIZE = train_dataset['data'].shape[1]
-      if not(Real_BATCH_SIZE ==BATCH_SIZE):
+
+      Real_BATCH_SIZE = train_dataset['data'].shape[1] # Calculate the actual BATCH_SIZE of the training data
+      if not(Real_BATCH_SIZE ==BATCH_SIZE): #if there is a mismatch between the actual batch size and the desired batch size (i.e. BATCH_SIZE)...
+        #...then ask the user if he wants to reshape the data to the desired batch size
         reshape_yn = int(input('data found with batchsize '+str(Real_BATCH_SIZE)+ '.Reshape it to the desired batchsize '+str(BATCH_SIZE)+'? (1=y,0=n)'))
-        if reshape_yn==1:
+        if reshape_yn==1: # if the user asks for reshape...
           def reshape_data(train_dataset, Real_BATCH_SIZE, BATCH_SIZE):
-              n = BATCH_SIZE//Real_BATCH_SIZE #pensato solo per 128 e 64
-              if not(train_dataset['data'].shape[0]%n==0):
+              n = BATCH_SIZE//Real_BATCH_SIZE # Designed for 128 and 64 only
+              if not(train_dataset['data'].shape[0]%n==0): #if the nr of rows of train_dataset['data'] is not divisible by n...
+                  #remove a row from the data and label arrays
                   train_dataset['data'] = train_dataset['data'][:-1,:,:]
                   train_dataset['labels'] = train_dataset['labels'][:-1,:,:]
+              #reshape both the data and labels array so that the batch size is now the desired one (i.e. BATCH_SIZE)
               train_dataset['data'] = train_dataset['data'].view(train_dataset['data'].shape[0]//n, BATCH_SIZE, train_dataset['data'].shape[2])
               train_dataset['labels'] = train_dataset['labels'].view(train_dataset['labels'].shape[0]//n, BATCH_SIZE, train_dataset['labels'].shape[2])
               return train_dataset
+          #...reshape both the train and test dataset
           train_dataset = reshape_data(train_dataset, Real_BATCH_SIZE, BATCH_SIZE)
           test_dataset = reshape_data(test_dataset, Real_BATCH_SIZE, BATCH_SIZE)
-    else:
+    else: # If the training file does not exist, load the data from scratch based on DATASET_ID
       if DATASET_ID =='MNIST':
         transform =transforms.Compose([transforms.ToTensor()])
         data_train = datasets.MNIST('../data', train=True, download=True, transform=transform)
@@ -83,23 +91,27 @@ def load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive):
         data_test = datasets.CelebA(root='../data', split='test', download=True, transform=transform)
 
       def data_and_labels(data_train, BATCH_SIZE,NUM_FEAT):
-        train_loader = DataLoader(data_train, batch_size=BATCH_SIZE, shuffle=True)
-        num_batches = data_train.__len__() // BATCH_SIZE
+        train_loader = DataLoader(data_train, batch_size=BATCH_SIZE, shuffle=True) #create a dataloader with the data shuffled
+        num_batches = data_train.__len__() // BATCH_SIZE # Calculate the total number of batches (NOTE: data_train.__len__() is equivalent to len(data_train))
+        # Create empty tensors to store the training data and labels
         train_data = torch.empty(num_batches, BATCH_SIZE, NUM_FEAT)
         train_labels = torch.empty(num_batches, BATCH_SIZE, n_cols_labels)
-        with tqdm(train_loader, unit = 'Batch') as tdata:
+        with tqdm(train_loader, unit = 'Batch') as tdata: #unit='Batch': Specifies the unit of measurement displayed by the progress bar
+            #Inside the with block, you typically have a loop that iterates over train_loader, 
+            #and tqdm will automatically update and display the progress bar as the loop progresses.
             for idx, (batch, labels) in enumerate(tdata):
-                tdata.set_description(f'Train Batch {idx}\t')
-                if idx<num_batches:
-                  bsize = batch.shape[0]
+                tdata.set_description(f'Train Batch {idx}\t') # set a description for the progress bar.
+                if idx<num_batches: # Check if the current batch index is within the number of batches
+                  bsize = batch.shape[0] # Get the batch size of the current batch
                   if DATASET_ID =='MNIST':
-                    train_data[idx,:,:] = batch.reshape(bsize, -1).type(torch.float32)
+                    train_data[idx,:,:] = batch.reshape(bsize, -1).type(torch.float32) #reshape images into vectors and change the type of the elements to torch.float32
                   else:
-                    gray_batch = batch.mean(dim=1, keepdim=True) # converti in scala di grigi
-                    for i in range(bsize):
-                        img_to_store = gray_batch[i].numpy().squeeze()
-                        if 'BW' in DATASET_ID:
-                          threshold = threshold_sauvola(img_to_store,window_size=7, k=0.05)
+                    gray_batch = batch.mean(dim=1, keepdim=True) # convert to grayscale
+                    for i in range(bsize): #for every element in the batch...
+                        img_to_store = gray_batch[i].numpy().squeeze() #convert the image to numpy and eliminate dimensions = 1
+                        if 'BW' in DATASET_ID: #if the DATASET_ID includes the BW letters (that stand for 'Black and White')...
+                          #...apply the Sauvola-Pietikainen algorithm for binarization. Parameters follow the paper
+                          threshold = threshold_sauvola(img_to_store,window_size=7, k=0.05) 
                           img_to_store = img_to_store > threshold
                         train_data[idx, i, :] = torch.from_numpy(img_to_store.reshape(-1).astype(np.float32))
                   if len(labels.shape)==1:
@@ -881,68 +893,125 @@ def readout_V_to_Hlast(dbn,train_dataset,test_dataset, DEVICE='cuda'):
 
 
 def comparisons_plot(Results_dict, sel_key='Nr_visited_states_MEAN'):
-    # parametri grafici
-    LineW = 4
-    Mk = 's'
-    Mk_sz = 12
-    Cp_sz = 12
-    Err_bar_sz = 4
-    Scritte_sz = 50
+  # parametri grafici
+  def Nr_visited_states_MEAN_SEM(Results_dict, MNIST_fname):
+    def SEM(measure):
+      import math
+      nr_of_measures = len(measure)
+      if not(isinstance(measure, np.ndarray)):
+        measure = np.asarray(measure)
+      sem = np.std(measure)/math.sqrt(nr_of_measures)
+      return sem
 
-    # Define the two lists of four numbers
-    MNIST = np.array(Results_dict['MNIST'][sel_key])
-    CelebA =  np.array(Results_dict['CelebA_BW'][sel_key])
+    MNIST = Results_dict[MNIST_fname]
+    if not('Nr_visited_states_MEAN' in MNIST):
+      if len(MNIST.keys()) == 3:
+        sz_mean = len(MNIST.keys())
+      else:
+        sz_mean = len(MNIST.keys())-1
+      Nr_visited_states_MEAN = np.zeros(sz_mean)
+      Nr_visited_states_SEM = np.zeros(sz_mean)
+      c=0
+      keys = ['Nr_visited_states_LB', 'Nr_visited_states_C2lb', 'Nr_visited_states_Cint']
+      for k in keys:
+        print()
+        MNIST[k] = np.array(MNIST[k])
+        print(MNIST[k])
+        Nr_visited_states_MEAN[c]=np.mean(MNIST[k])
+        Nr_visited_states_SEM[c]=SEM(MNIST[k])
+        c=c+1
+      Results_dict[MNIST_fname]['Nr_visited_states_MEAN']=Nr_visited_states_MEAN
+      Results_dict[MNIST_fname]['Nr_visited_states_SEM']=Nr_visited_states_SEM
+    return Results_dict
 
-    # Define the two lists of four SEMs
-    if sel_key=='Nr_visited_states_MEAN':
-      MNIST_sem =  np.array(Results_dict['MNIST']['Nr_visited_states_SEM'])
-      CelebA_sem =  np.array(Results_dict['CelebA_BW']['Nr_visited_states_SEM'])
-      # Create a list of the x-axis labels
-      x_labels = ['LB', 'C_2LB', 'C_int']
-      x_lab = 'Generation method'
-      y_lab = 'Number of states'
-      y_r = [1,5]
+  LineW = 4
+  Mk = 's'
+  Mk_sz = 12
+  Cp_sz = 12
+  Err_bar_sz = 4
+  Scritte_sz = 50
+
+  if sel_key=='Nr_visited_states_MEAN':
+    x_labels = ['LB', 'C_2LB', 'C_int']
+    x_lab = 'Generation method'
+    y_lab = 'Number of states'
+    y_r = [1,5]
+  else:
+    # Create a list of the x-axis labels
+    x_labels = ['V', 'H1', 'H2', 'H3']
+    x_lab = 'Layer'
+    y_lab = 'Accuracy'
+    y_r = [0.85,1]
+
+
+  # ottieni le chiavi del dizionario e calcola il loro numero
+  keys = list(Results_dict.keys())
+  n = len(keys)
+
+  # costruisci la stringa per il prompt di input
+  input_prompt = "Che chiavi vuoi selezionare?\n"
+  for i in range(n):
+      input_prompt += f"{i}: {keys[i]}\n"
+
+  # richiedi all'utente di selezionare una chiave
+  selected_key_index = input(input_prompt)
+  selected_key_index = eval(selected_key_index)
+
+  fnames = [keys[idx] for idx in selected_key_index]
+  def custom_sort(elem):
+    if 'dbn' in elem:
+        return (0, -1 * elem.count('MNIST'))
+    elif 'MNIST' in elem:
+        return (1, -1 * elem.count('MNIST'))
     else:
-      # Create a list of the x-axis labels
-      x_labels = ['V', 'H1', 'H2', 'H3']
-      x_lab = 'Layer'
-      y_lab = 'Accuracy'
-      y_r = [0.5,1]
+        return (2, 0)
 
-    # Create a new figure and axis object
-    fig, ax = plt.subplots(figsize=(15, 15))
+  fnames = sorted(fnames, key=custom_sort)
 
-    # Plot the first line
-    line1, = ax.plot(x_labels, MNIST, color='blue', label='MNIST', linewidth=LineW, marker=Mk, markersize=Mk_sz)
-    # Plot the second line
-    line2, = ax.plot(x_labels, CelebA, color='red', label='CelebA', linewidth=LineW, marker=Mk, markersize=Mk_sz)
-    if  sel_key=='Nr_visited_states_MEAN':
-      # Add error bars to the first line
-      ax.errorbar(x_labels, MNIST, yerr=MNIST_sem, fmt='none', ecolor='blue', capsize=Cp_sz, elinewidth=Err_bar_sz)
+  line_list = []
+  fig, ax = plt.subplots(figsize=(15, 15))
+  for fname in fnames:
+    Results_dict = Nr_visited_states_MEAN_SEM(Results_dict, fname)
+    Dati = np.array(Results_dict[fname][sel_key])
+    if 'RBM' in fname:
+      model_type = 'RBM'
+      L_style='--'
+    else:
+      model_type = 'iDBN'
+      L_style='-'
+    if 'MNIST' in fname:
+      L_col = 'blue'
+      ds_type = 'MNIST'
+    else:
+      L_col = 'red'
+      ds_type = 'CelebA'
+      if sel_key=='readout':
+        y_r = [0.75,0.8]
+    print(Dati)
+    model_type = model_type+' '+ds_type
+    linei, = ax.plot(x_labels, Dati, color=L_col, label=model_type, linewidth=LineW, marker=Mk, markersize=Mk_sz, linestyle=L_style)
+    line_list.append(linei)
+    if sel_key=='Nr_visited_states_MEAN':
+      Dati_SEM = np.array(Results_dict[fname]['Nr_visited_states_SEM'])
       # Add error bars to the second line
-      ax.errorbar(x_labels, CelebA, yerr=CelebA_sem, fmt='none', ecolor='red', capsize=Cp_sz,  elinewidth=Err_bar_sz)
+      ax.errorbar(x_labels, Dati, yerr=Dati_SEM, fmt='none', ecolor=L_col, capsize=Cp_sz,  elinewidth=Err_bar_sz)
+  if len(fnames)>1:
+    ax.legend(handles=line_list, loc='upper center', bbox_to_anchor=(1.35, 0.7), fontsize=Scritte_sz)
 
-    # Set the x-axis label
-    ax.set_xlabel(x_lab, fontsize=Scritte_sz)
 
-    # Set the y-axis label
-    ax.set_ylabel(y_lab, fontsize=Scritte_sz)
-
-    # Set the font size of all the text in the plot
-    plt.rc('font', size=Scritte_sz)
-
-    # Set the y-axis range
-    ax.set_ylim(y_r)
-
-    # Set the legend position and font size
-    ax.legend(handles=[line1, line2], loc='upper center', bbox_to_anchor=(0.5, 0.3), fontsize=Scritte_sz)
-
-    # Set the x-axis tick font size
-    ax.tick_params(axis='x', labelsize=Scritte_sz)
-
-    # Set the y-axis tick font size
-    ax.tick_params(axis='y', labelsize=Scritte_sz)
-
-    # Display the plot
-    plt.show()
+    
+  # Set the x-axis label
+  ax.set_xlabel(x_lab, fontsize=Scritte_sz)
+  # Set the y-axis label
+  ax.set_ylabel(y_lab, fontsize=Scritte_sz)
+  # Set the font size of all the text in the plot
+  plt.rc('font', size=Scritte_sz)
+  # Set the y-axis range
+  ax.set_ylim(y_r)
+  # Set the x-axis tick font size
+  ax.tick_params(axis='x', labelsize=Scritte_sz)
+  # Set the y-axis tick font size
+  ax.tick_params(axis='y', labelsize=Scritte_sz)
+  # Display the plot
+  plt.show()
 
