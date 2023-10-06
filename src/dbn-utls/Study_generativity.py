@@ -21,6 +21,37 @@ from skimage.filters import threshold_sauvola
 from pathlib import Path
 from copy import deepcopy
 
+def data_and_labels(data_train, BATCH_SIZE,NUM_FEAT):
+  #This function prepares the data for processing by machine learning models (NOTE FOR THE WRITER: Be more specific)
+  train_loader = DataLoader(data_train, batch_size=BATCH_SIZE, shuffle=True) #create a dataloader with the data shuffled
+  num_batches = data_train.__len__() // BATCH_SIZE # Calculate the total number of batches (NOTE: data_train.__len__() is equivalent to len(data_train))
+  # Create empty tensors to store the training data and labels
+  train_data = torch.empty(num_batches, BATCH_SIZE, NUM_FEAT)
+  train_labels = torch.empty(num_batches, BATCH_SIZE, n_cols_labels)
+  with tqdm(train_loader, unit = 'Batch') as tdata: #unit='Batch': Specifies the unit of measurement displayed by the progress bar
+      #Inside the with block, you typically have a loop that iterates over train_loader, 
+      #and tqdm will automatically update and display the progress bar as the loop progresses.
+      for idx, (batch, labels) in enumerate(tdata):
+          tdata.set_description(f'Train Batch {idx}\t') # set a description for the progress bar.
+          if idx<num_batches: # Check if the current batch index is within the number of batches
+            bsize = batch.shape[0] # Get the batch size of the current batch
+            if DATASET_ID =='MNIST':
+              train_data[idx,:,:] = batch.reshape(bsize, -1).type(torch.float32) #reshape images into vectors and change the type of the elements to torch.float32
+            else:
+              gray_batch = batch.mean(dim=1, keepdim=True) # convert to grayscale
+              for i in range(bsize): #for every element in the batch...
+                  img_to_store = gray_batch[i].numpy().squeeze() #convert the image to numpy and eliminate dimensions = 1
+                  if 'BW' in DATASET_ID: #if the DATASET_ID includes the BW letters (that stand for 'Black and White')...
+                    #...apply the Sauvola-Pietikainen algorithm for binarization. Parameters follow the paper https://link.aps.org/doi/10.1103/PhysRevX.13.021003
+                    threshold = threshold_sauvola(img_to_store,window_size=7, k=0.05) 
+                    img_to_store = img_to_store > threshold
+
+                  train_data[idx, i, :] = torch.from_numpy(img_to_store.reshape(-1).astype(np.float32)) #convert the np array into torch tensor (as a 1d vector (-> reshape))
+            if len(labels.shape)==1: #if your labels have just 1 dimension...
+                labels = labels.unsqueeze(1) #... then add 1 dimension
+            train_labels[idx, :, :] = labels.type(torch.float32) #store also labels as torch.float32
+  return train_data, train_labels  
+
 
 def load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive):
     #This function summarizes the loading data into the Zambra repository, avoiding issues and errors.
@@ -88,39 +119,7 @@ def load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive):
             transforms.Grayscale(),
             transforms.ToTensor()])
         data_train = datasets.CelebA(root='../data', split='train', download=True, transform=transform)
-        data_test = datasets.CelebA(root='../data', split='test', download=True, transform=transform)
-
-      def data_and_labels(data_train, BATCH_SIZE,NUM_FEAT):
-        #This function prepares the data for processing by machine learning models (NOTE FOR THE WRITER: Be more specific)
-        train_loader = DataLoader(data_train, batch_size=BATCH_SIZE, shuffle=True) #create a dataloader with the data shuffled
-        num_batches = data_train.__len__() // BATCH_SIZE # Calculate the total number of batches (NOTE: data_train.__len__() is equivalent to len(data_train))
-        # Create empty tensors to store the training data and labels
-        train_data = torch.empty(num_batches, BATCH_SIZE, NUM_FEAT)
-        train_labels = torch.empty(num_batches, BATCH_SIZE, n_cols_labels)
-        with tqdm(train_loader, unit = 'Batch') as tdata: #unit='Batch': Specifies the unit of measurement displayed by the progress bar
-            #Inside the with block, you typically have a loop that iterates over train_loader, 
-            #and tqdm will automatically update and display the progress bar as the loop progresses.
-            for idx, (batch, labels) in enumerate(tdata):
-                tdata.set_description(f'Train Batch {idx}\t') # set a description for the progress bar.
-                if idx<num_batches: # Check if the current batch index is within the number of batches
-                  bsize = batch.shape[0] # Get the batch size of the current batch
-                  if DATASET_ID =='MNIST':
-                    train_data[idx,:,:] = batch.reshape(bsize, -1).type(torch.float32) #reshape images into vectors and change the type of the elements to torch.float32
-                  else:
-                    gray_batch = batch.mean(dim=1, keepdim=True) # convert to grayscale
-                    for i in range(bsize): #for every element in the batch...
-                        img_to_store = gray_batch[i].numpy().squeeze() #convert the image to numpy and eliminate dimensions = 1
-                        if 'BW' in DATASET_ID: #if the DATASET_ID includes the BW letters (that stand for 'Black and White')...
-                          #...apply the Sauvola-Pietikainen algorithm for binarization. Parameters follow the paper https://link.aps.org/doi/10.1103/PhysRevX.13.021003
-                          threshold = threshold_sauvola(img_to_store,window_size=7, k=0.05) 
-                          img_to_store = img_to_store > threshold
-
-                        train_data[idx, i, :] = torch.from_numpy(img_to_store.reshape(-1).astype(np.float32)) #convert the np array into torch tensor (as a 1d vector (-> reshape))
-                  if len(labels.shape)==1: #if your labels have just 1 dimension...
-                     labels = labels.unsqueeze(1) #... then add 1 dimension
-                  train_labels[idx, :, :] = labels.type(torch.float32) #store also labels as torch.float32
-        return train_data, train_labels   
-      
+        data_test = datasets.CelebA(root='../data', split='test', download=True, transform=transform)      
       train_data, train_labels = data_and_labels(data_train, BATCH_SIZE,NUM_FEAT)
       test_data, test_labels = data_and_labels(data_test, BATCH_SIZE,NUM_FEAT)
 
