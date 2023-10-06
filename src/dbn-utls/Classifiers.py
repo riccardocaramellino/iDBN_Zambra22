@@ -93,33 +93,32 @@ class VGG16(nn.Module):
     return x
   
 def CelebA_ResNet_classifier(ds_loaders = [], num_classes = 4, num_epochs = 20, learning_rate = 0.001, filename=''):
-    Zambra_folder_drive = '/content/gdrive/My Drive/ZAMBRA_DBN/'
-    classifier = models.resnet18(pretrained=True)
-    classifier.fc = nn.Linear(classifier.fc.in_features, num_classes)
-    if ds_loaders == []: #load old model
-        classifier.load_state_dict(torch.load(Zambra_folder_drive+filename)) #DA FARE: AUTOMATIZZA IL LOADPATH
-        classifier = classifier.to('cuda')
+    Zambra_folder_drive = '/content/gdrive/My Drive/ZAMBRA_DBN/' # Define the directory path where the model and data are stored
+    classifier = models.resnet18(pretrained=True) # Initialize a ResNet-18 model pretrained on ImageNet
+    classifier.fc = nn.Linear(classifier.fc.in_features, num_classes)  # Modify the fully connected layer (classifier head) to have the desired number of output classes
+    if ds_loaders == []:  # Load a model already trained if ds_loaders is empty
+        classifier.load_state_dict(torch.load(Zambra_folder_drive+filename)) 
+        classifier = classifier.to('cuda') # Move the model to the GPU if available
     else:
-        # Definizione del dataloader
+        # Define the data loaders for training and validation
         train_loader = ds_loaders[0]
         val_loader = ds_loaders[1]
-        # Sblocco di tutti i parametri del modello per il fine-tuning
+        # Enable gradient computation for all model parameters (fine-tuning)
         for param in classifier.parameters():
             param.requires_grad = True
-
-        # Definizione della loss function e dell'ottimizzatore.
+        # Define the loss function (CrossEntropyLoss) and optimizer (Adam)
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.Adam(classifier.parameters(), lr=learning_rate)
-
-        # Spostamento del modello e della loss function sulla GPU, se disponibile
+        # Move the model and loss function to the GPU if available
         classifier = classifier.to('cuda')
         criterion = criterion.to('cuda')
-        # Ciclo di training
+
+        # Training loop
         for epoch in range(num_epochs):
             train_loss = 0.0
             val_loss = 0.0
-            correct = 0
-            total = 0
+            correct = 0 #counter of the total number of correct predictions
+            total = 0 #counter of the total number of examples observed
 
             # Training
             classifier.train()
@@ -127,26 +126,29 @@ def CelebA_ResNet_classifier(ds_loaders = [], num_classes = 4, num_epochs = 20, 
                 images = images.to('cuda')
                 labels = labels.to('cuda')
                 labels = labels.to(torch.long)  # Convert labels to long data type
-                optimizer.zero_grad()
-                outputs = classifier(images)
-                loss = criterion(outputs, labels)
-                loss.backward()
-                optimizer.step()
-                train_loss += loss.item() * images.size(0)
-                _, predicted = torch.max(outputs.data, 1)
+                optimizer.zero_grad()  #this line sets the gradients of all the model's parameters to zero.
+                outputs = classifier(images) #obtain the predictions of the classifier on images
+                loss = criterion(outputs, labels) #and compute the loss
+                loss.backward() #backward() computes the gradients of that tensor with respect to all the tensors that were used to compute it.
+                #it starts the process of computing gradients by tracing back through the computational graph, from the loss value all the way to the model's parameters using the chain rule
+                optimizer.step() #step(),when called on an optimizer, performs a single optimization step, which includes updating the model's parameters based on the computed gradients.
+                train_loss += loss.item() * images.size(0) # Accumulate the training loss by scaling it with the batch size
+                _, predicted = torch.max(outputs.data, 1) # Compute the predicted class labels for the current batch
+                # Update total and correct predictions counters
                 total += labels.size(0)
-                correct += (predicted == labels).sum().item()
-            train_loss = train_loss / len(train_loader.dataset)
-            train_acc = correct / total
+                correct += (predicted == labels).sum().item() 
+            train_loss = train_loss / len(train_loader.dataset) # Calculate the average training loss over all batches
+            train_acc = correct / total # Calculate the training accuracy by dividing correct predictions by the total number of samples
 
             # Validation
-            classifier.eval()
-            with torch.no_grad():
+            classifier.eval() #put the classifier into evaluation mode
+            with torch.no_grad(): #When entering this block, it temporarily sets a flag that tells PyTorch not to track gradients for tensor operations inside the block.
+                #you do the same operations performed in training on the validation set
                 for images, labels in val_loader:
                     images = images.to('cuda')
                     labels = labels.to('cuda')
-                    labels = labels.to(torch.long)  # Convert labels to long data type
-                    outputs = classifier(images)
+                    labels = labels.to(torch.long) 
+                    outputs = classifier(images) 
                     loss = criterion(outputs, labels)
                     val_loss += loss.item() * images.size(0)
                     _, predicted = torch.max(outputs.data, 1)
@@ -155,11 +157,11 @@ def CelebA_ResNet_classifier(ds_loaders = [], num_classes = 4, num_epochs = 20, 
                 val_loss = val_loss / len(val_loader.dataset)
                 val_acc = correct / total
 
-            # Stampa dei risultati dell'epoch
+            # print training and validation loss and accuracy
             print('Epoch [{}/{}], Train Loss: {:.4f}, Train Acc: {:.4f}, Val Loss: {:.4f}, Val Acc: {:.4f}'
                 .format(epoch+1, num_epochs, train_loss, train_acc, val_loss, val_acc))
             
-        torch.save(classifier.state_dict(), Zambra_folder_drive+filename) 
+        torch.save(classifier.state_dict(), Zambra_folder_drive+filename) #save the classifier
             
     return classifier
 
