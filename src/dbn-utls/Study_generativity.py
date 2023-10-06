@@ -535,43 +535,39 @@ def generate_from_hidden_ZAMBRA(dbn, input_hid_prob, nr_gen_steps=1):
     result_dict['hid_prob'] = hid_prob
     result_dict['vis_prob'] = vis_prob
 
-
     return result_dict
 
 
 class Intersection_analysis_ZAMBRA:
     def __init__(self, model, top_k_Hidden=100, nr_steps=100):
-        self.model = model
-        self.top_k_Hidden = top_k_Hidden
-        self.nr_steps = nr_steps
+        self.model = model #the DBN model
+        self.top_k_Hidden = top_k_Hidden #nr of hidden units with highest activity, which will then be binarized to 1
+        self.nr_steps = nr_steps #nr steps of generation
         
     def do_intersection_analysis(self):
-
-      for dig in range(self.model.Num_classes):
-        g_H = label_biasing_ZAMBRA(self.model, on_digits=dig, topk = -1)
+      #for the intersection method
+      for dig in range(self.model.Num_classes): #for each class...
+        g_H = label_biasing_ZAMBRA(self.model, on_digits=dig, topk = -1) #...do label biasing activating just that digit
         if dig == 0:
             hid_bias = g_H
         else:
-            hid_bias = torch.hstack((hid_bias,g_H))
+            hid_bias = torch.hstack((hid_bias,g_H)) #stack together the label biasing vector for each digit
 
       vettore_indici_allDigits_biasing = torch.empty((0),device= self.model.DEVICE)
 
-      for digit in range(self.model.Num_classes): #per ogni digit
-        hid_vec_B = hid_bias[:,digit] #questo è l'hidden state ottenuto con il label biasing di un certo digit
-        top_values_biasing, top_idxs_biasing = torch.topk(hid_vec_B, self.top_k_Hidden) #qui e la linea sotto  trovo i top p indici in termini di attività
+      for digit in range(self.model.Num_classes): #for each digit
+        hid_vec_B = hid_bias[:,digit] #get the hidden state obtained by label biasing with the specific class 'digit'
+        #in the next two lines i find the top p indexes in terms of activation
+        top_values_biasing, top_idxs_biasing = torch.topk(hid_vec_B, self.top_k_Hidden) 
+        vettore_indici_allDigits_biasing = torch.cat((vettore_indici_allDigits_biasing,top_idxs_biasing),0) #I concatenate the top p indexes for all digits in this vector
 
-        vettore_indici_allDigits_biasing = torch.cat((vettore_indici_allDigits_biasing,top_idxs_biasing),0) #concateno i top p indici di ciascun i digits in questo vettore
+      unique_idxs_biasing,count_unique_idxs_biasing = torch.unique(vettore_indici_allDigits_biasing,return_counts=True) # Of the indexes found i take just the ones that are not repeated      
 
-      unique_idxs_biasing,count_unique_idxs_biasing = torch.unique(vettore_indici_allDigits_biasing,return_counts=True) #degli indici trovati prendo solo quelli non ripetuti
-
-
-      digit_digit_common_elements_count_biasing = torch.zeros((self.model.Num_classes,self.model.Num_classes))
-
+      digit_digit_common_elements_count_biasing = torch.zeros((self.model.Num_classes,self.model.Num_classes)) #in here i will count the number of common elements in each intersection
       self.unique_H_idxs_biasing = unique_idxs_biasing
 
-      result_dict_biasing ={}
-
-
+      result_dict_biasing ={} #here i will store, for each combination of classes (keys), the units in intersection between them
+      #for each category i iterate to compute the entries of the nr.classes x nr.classes matrices
       #itero per ogni digit per calcolare le entrate delle matrici 10 x 10
       for row in range(self.model.Num_classes): 
         for col in range(self.model.Num_classes):
@@ -579,20 +575,20 @@ class Intersection_analysis_ZAMBRA:
           common_el_idxs_biasing = torch.empty((0),device= self.model.DEVICE)
 
           counter_biasing = 0
-          for id in unique_idxs_biasing: #per ogni indice unico del biasing di ogni digit
+          for id in unique_idxs_biasing: #for each of the top indices
             digits_found = torch.floor(torch.nonzero(vettore_indici_allDigits_biasing==id)/self.top_k_Hidden)
-            #nella linea precedente torch.nonzero(vettore_indici_allDigits_biasing==id) trova le posizioni nell'array vettore_indici_allDigits_biasing
-            #che ospitano l'unità ID. ora, essendo che vettore_indici_allDigits_biasing contiene le prime 100 unità più attive di ciascun digit, se divido gli indici per 100
-            #trovo per quali digit l'unità ID era attiva
-            if torch.any(digits_found==row) and torch.any(digits_found==col): #se i digits trovati ospitano sia il digit riga che quello colonna...
-                common_el_idxs_biasing = torch.hstack((common_el_idxs_biasing,id)) #aggiungi ID al vettore di ID che verranno usati per fare biasing
-                counter_biasing += 1
+            #torch.nonzero(vettore_indici_allDigits_biasing==id) finds the positions in the array vettore_indici_allDigits_biasing  where there is the value id is present
+            #indeed, given that the vector vettore_indici_allDigits_biasing contains the top 100 most active units for each digit, if i divide the indexes by 100 (i.e. top_k_Hidden)
+            #then i will find for which digit the unit id was active.
 
-          result_dict_biasing[str(row)+','+str(col)] = common_el_idxs_biasing
+            if torch.any(digits_found==row) and torch.any(digits_found==col): #if the digits found present both the row and the col digits...
+                common_el_idxs_biasing = torch.hstack((common_el_idxs_biasing,id)) #add the id to the vector of ids that will be used for intersection method biasing
+                counter_biasing += 1 # i count the number of intersection elements to fill in the digit_digit_common_elements_count_biasing matrix
+
+          result_dict_biasing[str(row)+','+str(col)] = common_el_idxs_biasing #store the units in the intersection
           digit_digit_common_elements_count_biasing[row,col] = counter_biasing
 
-
-      self.result_dict_biasing = result_dict_biasing
+      self.result_dict_biasing = result_dict_biasing 
 
       print(digit_digit_common_elements_count_biasing)
       #lbl_bias_freqV = digit_digit_common_elements_count_biasing.view(100)/torch.sum(digit_digit_common_elements_count_biasing.view(100))

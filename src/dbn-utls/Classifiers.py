@@ -169,36 +169,35 @@ def CelebA_ResNet_classifier(ds_loaders = [], num_classes = 4, num_epochs = 20, 
   
 def Classifier_accuracy(input_dict, classifier,model, Thresholding_entropy=[], labels=[], cl_lbls =[], Batch_sz= 100, plot=1, dS=30, l_sz=3):
   classifier = classifier.to('cuda')
-  #plot = 2 -> only digitwise accuracy
-  if Thresholding_entropy!=[]:
+  #plot = 2 -> only digitwise accuracy #NOT USED
+  if Thresholding_entropy!=[]: #NOT USED
     Thresholding_entropy = torch.mean(Thresholding_entropy) + 2*torch.std(Thresholding_entropy)
   input_data = input_dict['vis_states']
-  image_side = int(np.sqrt(input_data.size()[1]))
+  image_side = int(np.sqrt(input_data.size()[1])) 
   #input_data = nr_examples x 784 (i.e. image size) x nr_steps
   
-  Cl_pred_matrix = torch.zeros(input_data.size()[0],input_data.size()[2], device=model.DEVICE)
-  if not(image_side==64):
+  Cl_pred_matrix = torch.zeros(input_data.size()[0],input_data.size()[2], device=model.DEVICE) #numbers of samples to generate x number of generation steps
+  if not(image_side==64): #if images are not from the CelebA dataset...
     Pred_entropy_mat = torch.zeros(input_data.size()[0],input_data.size()[2], device=model.DEVICE)
     digitwise_avg_entropy = torch.zeros(model.Num_classes,input_data.size()[2], device=model.DEVICE)
     digitwise_sem_entropy = torch.zeros(model.Num_classes,input_data.size()[2], device=model.DEVICE)
-  digitwise_acc = torch.zeros(model.Num_classes,input_data.size()[2], device=model.DEVICE)
+  digitwise_acc = torch.zeros(model.Num_classes,input_data.size()[2], device=model.DEVICE)  #number of classes x number of generation steps
 
-  acc = torch.zeros(input_data.size()[2])
+  acc = torch.zeros(input_data.size()[2]) #len = number of generation steps
   if labels==[]:
     labels = torch.zeros(input_data.size()[0], device=model.DEVICE)
 
-
-  for step in range(input_data.size()[2]):#i.e per ogni step di ricostruzione
-    V = input_data[:,:,step] # estraggo i visibili di ciascun esempio allo step iteratore
-    V = torch.unsqueeze(V.view((input_data.size()[0],image_side,image_side)),1) #cambio la dimensione del tensore: da n_ex x 784 a n_ex x 1 x 28 x 28
-    if image_side==28:
-      V_int = F.interpolate(V, size=(32, 32), mode='bicubic', align_corners=False) # creo un nuovo tensore a dimensionalità n_ex x 1 x 32 x 32
-    elif image_side==64:
-      V_int = F.interpolate(V, size=(224, 224), mode='bicubic', align_corners=False)
-      V_int = V_int.repeat(1, 3, 1, 1)
-    #tocca fare a batch, il che è abbastanza una fatica. Ma così mangia tutta la GPU
+  for step in range(input_data.size()[2]):#i.e for each generation step
+    V = input_data[:,:,step] # extract the visible of each example at that generation step 'step'
+    V = torch.unsqueeze(V.view((input_data.size()[0],image_side,image_side)),1) #i change the size of the tensor: from n_ex x 784 to n_ex x 1 x 28 x 28 (for MNIST)
+    if image_side==28: #MNIST
+      V_int = F.interpolate(V, size=(32, 32), mode='bicubic', align_corners=False) # tensor with dimensionality n_ex x 1 x 32 x 32
+    elif image_side==64: #CelebA
+      V_int = F.interpolate(V, size=(224, 224), mode='bicubic', align_corners=False) 
+      V_int = V_int.repeat(1, 3, 1, 1) #this should repeat the tensor 3 times, to account for RGB channels
+    #the following operations are accomplished with batching, in order to avoid using all the GPU on colab
     _dataset = torch.utils.data.TensorDataset(V_int.to('cuda'),labels) # create your datset
-    if Batch_sz > input_data.size()[0]: # se il batch size selezionato è più grande dell'input size...
+    if Batch_sz > input_data.size()[0]: # if batch size is bigger than input size...
       Batch_sz = input_data.size()[0]
     _dataloader = torch.utils.data.DataLoader(_dataset,batch_size=Batch_sz,drop_last = True) # create your dataloader
     
@@ -210,31 +209,31 @@ def Classifier_accuracy(input_dict, classifier,model, Thresholding_entropy=[], l
     for (input, lbls) in _dataloader:
       
       with torch.no_grad():
-        pred_vals=classifier(input) #predizioni del classificatore
-      if not(image_side==64):
+        pred_vals=classifier(input) #predictions of the classifier
+      if not(image_side==64): #if you are using MNIST
         Pred_entropy = torch.distributions.Categorical(probs =pred_vals[:,:10]).entropy()
         Pred_entropy_mat[index:index+Batch_sz,step] = Pred_entropy
 
-      _, inds = torch.max(pred_vals,dim=1)
-      Cl_pred_matrix[index:index+Batch_sz,step] = inds
-      acc_v[n_it] = torch.sum(inds.to(model.DEVICE)==lbls)/input.size()[0]
-      n_it = n_it+1
-      index = index+ Batch_sz
-    acc[step] = torch.mean(acc_v)
+      _, inds = torch.max(pred_vals,dim=1) #find the predicted classes
+      Cl_pred_matrix[index:index+Batch_sz,step] = inds #store the predictions into Cl_pred_matrix
+      acc_v[n_it] = torch.sum(inds.to(model.DEVICE)==lbls)/input.size()[0] #compute the accuracy for the specific iteration
+      n_it = n_it+1 #update the number of iterations of batching
+      index = index+ Batch_sz #the index is updated for the next batch
+    acc[step] = torch.mean(acc_v) #accuracy of a generation step is the average accuracy between batches
     
-    for digit in range(model.Num_classes):
-      l = torch.where(labels == digit)
-      if not(image_side==64):
+    for digit in range(model.Num_classes): #for each class
+      l = torch.where(labels == digit) #check the indices of that particular class
+      if not(image_side==64): #only for MNIST
         digitwise_avg_entropy[digit,step] = torch.mean(Pred_entropy_mat[l[0],step])
         digitwise_sem_entropy[digit,step] = torch.std(Pred_entropy_mat[l[0],step])/math.sqrt(l[0].size()[0])
 
-      inds_digit = Cl_pred_matrix[l[0],step]
-      digitwise_acc[digit,step] = torch.sum(inds_digit.to(model.DEVICE)==labels[l[0]])/l[0].size()[0]
-  if not(image_side==64):
+      inds_digit = Cl_pred_matrix[l[0],step] #finds the predictions for that specific class in that generation step
+      digitwise_acc[digit,step] = torch.sum(inds_digit.to(model.DEVICE)==labels[l[0]])/l[0].size()[0] #compute the digitwise accuracy for that particular digit
+  if not(image_side==64): #only for MNIST
     MEAN_entropy = torch.mean(Pred_entropy_mat,0)
     SEM_entropy = torch.std(Pred_entropy_mat,0)/math.sqrt(input_data.size()[0])
 
-    if Thresholding_entropy!=[]:
+    if Thresholding_entropy!=[]: #NOT USED
       #  Entropy_mat_NN = Pred_entropy_mat[Cl_pred_matrix==10]
       #  NN_mean_entropy = Entropy_mat_NN.mean()
       #  NN_std_entropy = Entropy_mat_NN.std()
@@ -255,7 +254,7 @@ def Classifier_accuracy(input_dict, classifier,model, Thresholding_entropy=[], l
 
   if plot == 1:
       c=0
-      cmap = cm.get_cmap('hsv')
+      cmap = cm.get_cmap('hsv') #colormap used
       if cl_lbls==[]:
         cl_lbls = range(model.Num_classes)
       x = range(1,input_data.size()[2]+1)
@@ -294,7 +293,7 @@ def Classifier_accuracy(input_dict, classifier,model, Thresholding_entropy=[], l
         figure, axis = plt.subplots(1, 1, figsize=(15,15))
         Cl_plot_digitwise(axis,cl_lbls,x,digitwise_avg_entropy,digitwise_y_err=digitwise_sem_entropy,x_lab='Generation step',y_lab='Entropy', Num_classes=model.Num_classes, lim_y = [0,1],Title = 'Entropy - digitwise',l_sz=l_sz, dS= dS, cmap=cmap)
 
-     
+  #the output is the input dictionary ernriched with new keys
   input_dict['Cl_pred_matrix'] = Cl_pred_matrix
   input_dict['Cl_accuracy'] = acc
   input_dict['digitwise_acc'] = digitwise_acc
@@ -303,7 +302,6 @@ def Classifier_accuracy(input_dict, classifier,model, Thresholding_entropy=[], l
     input_dict['MEAN_entropy'] = MEAN_entropy
     input_dict['digitwise_entropy'] = digitwise_avg_entropy
 
-   
   return input_dict
 
 def classification_metrics(dict_classifier,model,test_labels=[], Plot=1, dS = 30, rounding=2, T_mat_labels=[], Ian=0):
