@@ -390,22 +390,25 @@ def tool_loader_ZAMBRA(DEVICE,  selected_idx = [], half_data=False, only_data = 
 
 def classifier_loader(dbn,train_dataset_original, test_dataset_original, selected_idx = [], DEVICE = 'cuda'):
    if dbn.dataset_id == 'MNIST':
-      classifier = VGG16((1,32,32), batch_norm=True).to(DEVICE) #creo un'istanza del classificatore in cui poi caricherò i parametri salvati
+      #I create an instance of the classifier in which I will later load the saved parameters.
+      classifier = VGG16((1,32,32), batch_norm=True).to(DEVICE) 
       PATH = '/content/gdrive/My Drive/VGG16_MNIST/VGG16_MNIST_best_val.pth'
       classifier.load_state_dict(torch.load(PATH))
-   else:
+   else: #CelebA
       Load_classifier = int(input('do you want to load a classifier or train it from scratch? (1=load, 0=train)'))
       num_classes = 2**len(selected_idx)
       fname = 'resnet_'+str(num_classes)+'classes.pt'
 
-      if Load_classifier ==0:
+      if Load_classifier ==0: #if i want to train the classifier from scratch...
+          #i adapt the dataloaders to be suitable for the classifier
           train_dataloader = Multiclass_dataset(train_dataset_original, selected_idx = selected_idx, for_classifier = True, Old_rbm=False, DEVICE ='cuda')
           test_dataloader = Multiclass_dataset(test_dataset_original, selected_idx = selected_idx, for_classifier = True, Old_rbm=False, DEVICE ='cuda')
+          #i create the insance of the classifier and train it (all inside the CelebA_ResNet_classifier)
           classifier = CelebA_ResNet_classifier(ds_loaders = [train_dataloader, test_dataloader], num_classes = num_classes,  num_epochs = 20, learning_rate = 0.001, filename=fname)
-      else:
+      else: #if i want to load the classifier 
           classifier = CelebA_ResNet_classifier(ds_loaders = [],  num_classes = num_classes, filename=fname)
 
-   classifier.eval()
+   classifier.eval() #i put the classifier in evaluation mode
    return classifier
 
 def compute_inverseW_for_lblBiasing_ZAMBRA(model,train_dataset, L=[]):
@@ -437,29 +440,26 @@ def compute_inverseW_for_lblBiasing_ZAMBRA(model,train_dataset, L=[]):
 
 def label_biasing_ZAMBRA(model, on_digits=1, topk = 149):
 
-        # aim of this function is to implement the label biasing procedure described in
-        # https://www.frontiersin.org/articles/10.3389/fpsyg.2013.00515/full
-        
+    # aim of this function is to implement the label biasing procedure described in
+    # https://www.frontiersin.org/articles/10.3389/fpsyg.2013.00515/full
+    
+    Num_classes=model.Num_classes
+    # Now i set the label vector from which i will obtain the hidden layer of interest 
+    Biasing_vec = torch.zeros (Num_classes,1, device = model.DEVICE)
+    Biasing_vec[on_digits] = 1
 
-        Num_classes=model.Num_classes
-        # Now i set the label vector from which i will obtain the hidden layer of interest 
-        Biasing_vec = torch.zeros (Num_classes,1, device = model.DEVICE)
-        Biasing_vec[on_digits] = 1
+    #I compute the biased hidden vector as the matmul of the trasposed weights_inv and the biasing vec. gen_hidden will have size (Hidden layer size x 1)
+    gen_hidden= torch.matmul(torch.transpose(model.weights_inv,0,1), Biasing_vec)
 
-        #I compute the biased hidden vector as the matmul of the trasposed weights_inv and the biasing vec. gen_hidden will have size (Hidden layer size x 1)
-        gen_hidden= torch.matmul(torch.transpose(model.weights_inv,0,1), Biasing_vec)
+    if topk>-1: #ATTENZIONE: label biasing con più di una label attiva (e.g. on_digits=[4,6]) funziona UNICAMENTE con topk>-1 (i.e. attivando le top k unità piu attive e silenziando le altre)
+    #In caso contrario da errore CUDA non meglio specificato
+      H = torch.zeros_like(gen_hidden, device = model.DEVICE) #crate an empty array of the same shape of gen_hidden 
+      for c in range(gen_hidden.shape[1]): # for each example in gen_hidden...
+        top_indices = torch.topk(gen_hidden[:,c], k=topk).indices # compute the most active indexes
+        H[top_indices,c] = 1 #set the most active indexes to 0
+      gen_hidden = H # gen_hidden is now binary (1 or 0)
 
-        if topk>-1: #ATTENZIONE: label biasing con più di una label attiva (e.g. on_digits=[4,6]) funziona UNICAMENTE con topk>-1 (i.e. attivando le top k unità piu attive e silenziando le altre)
-        #In caso contrario da errore CUDA non meglio specificato
-          H = torch.zeros_like(gen_hidden, device = model.DEVICE) #crea un array vuoto della forma di gen_hidden
-          for c in range(gen_hidden.shape[1]): # per ciascun esempio di gen_hidden...
-            top_indices = torch.topk(gen_hidden[:,c], k=topk).indices # computa gli indici più attivati
-            H[top_indices,c] = 1 #setta gli indici più attivi a 1
-          gen_hidden = H # gen_hidden ha ora valori binari (1 e 0)
-
-
-
-        return gen_hidden
+    return gen_hidden
 
 
 def generate_from_hidden_ZAMBRA(dbn, input_hid_prob, nr_gen_steps=1):
@@ -469,43 +469,50 @@ def generate_from_hidden_ZAMBRA(dbn, input_hid_prob, nr_gen_steps=1):
     numcases = input_hid_prob.size()[0] #numbers of samples to generate
     hidden_layer_size = input_hid_prob.size()[1]
     vis_layerSize = dbn.rbm_layers[0].Nin
-
+    # Initialize tensors to store hidden and visible probabilities and states
+    # hid prob/states : nr layers x numbers of samples to generate x size of the hidden layer x number of generation steps
+    # vis prob/states : numbers of samples to generate x size of the visible layer x number of generation steps
     hid_prob = torch.zeros(len(dbn.rbm_layers),numcases,hidden_layer_size, nr_gen_steps, device=dbn.DEVICE)
     hid_states = torch.zeros(len(dbn.rbm_layers), numcases,hidden_layer_size, nr_gen_steps, device=dbn.DEVICE)
     vis_prob = torch.zeros(numcases, vis_layerSize, nr_gen_steps, device=dbn.DEVICE)
     vis_states = torch.zeros(numcases ,vis_layerSize, nr_gen_steps, device=dbn.DEVICE)
 
 
-    for gen_step in range(0, nr_gen_steps):
+    for gen_step in range(0, nr_gen_steps): #for each generation step...
       if gen_step==0: #if it is the 1st step of generation...
         hid_prob[2,:,:,gen_step]  = input_hid_prob #the hidden probability is the one in the input
         hid_states[2,:,:,gen_step]  = input_hid_prob
-        c=1
-        for rbm in reversed(dbn.rbm_layers):
-            if c==1:
-              p_v, v = rbm.backward(input_hid_prob)
+        c=1 # counter of layer depth
+        for rbm in reversed(dbn.rbm_layers): #The reversed() function is used to reverse the order of elements in an iterable (e.g., a list )
+            if c==1: #if it is the upper layer...
+              p_v, v = rbm.backward(input_hid_prob) #compute the activity of the layer below using the biasing vector
               layer_size = v.shape[1]
-              hid_prob[2-c,:,:layer_size,gen_step]  = p_v #the hidden probability is the one in the input
+              #i store the hid prob and state of the layer below
+              hid_prob[2-c,:,:layer_size,gen_step]  = p_v
               hid_states[2-c,:,:layer_size,gen_step]  = v
 
-            else:
-              if c<len(dbn.rbm_layers):
+            else:#if the layer selected is below the upper layer
+              if c<len(dbn.rbm_layers): #if the layer selected is not the one above the visible layer (i.e. below there is another hidden layer)
                 p_v, v = rbm.backward(v)
                 layer_size = v.shape[1]
-                hid_prob[2-c,:,:layer_size,gen_step]  = p_v #the hidden probability is the one in the input
+                #i store the hid prob and state of the layer below
+                hid_prob[2-c,:,:layer_size,gen_step]  = p_v 
                 hid_states[2-c,:,:layer_size,gen_step]  = v
-              else:
+              else: #if the layer below is the visible later
                 v, p_v = rbm.backward(v) #passo la probabilità (che in questo caso è v) dopo
                 layer_size = v.shape[1]
-                vis_prob[:,:,gen_step]  = v #the hidden probability is the one in the input
+                #i store the visible state and probabilities
+                vis_prob[:,:,gen_step]  = v 
                 vis_states[:,:,gen_step]  = v
-            c=c+1
-      else:
+            c=c+1#for each layer i iterate, i update the counter
+      else: #after the 1st gen step
+            #from the visible state obtained in the previous activation, compute the activation of the upper layer
             for rbm in dbn.rbm_layers:
               p_v, v = rbm(v)
-            hid_prob[2,:,:,gen_step]  = p_v #the hidden probability is the one in the input
+            #i store the probability and state of the upper layer
+            hid_prob[2,:,:,gen_step]  = p_v 
             hid_states[2,:,:,gen_step]  = v
-
+            #and i do the same as in the first step(code below)
             c=1
             for rbm in reversed(dbn.rbm_layers):
 
@@ -521,7 +528,7 @@ def generate_from_hidden_ZAMBRA(dbn, input_hid_prob, nr_gen_steps=1):
                 vis_states[:,:,gen_step]  = v
               c=c+1
               
-
+    #the result dict will contain the output of the whole generation process
     result_dict = dict(); 
     result_dict['hid_states'] = hid_states
     result_dict['vis_states'] = vis_states
