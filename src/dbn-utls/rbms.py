@@ -197,7 +197,7 @@ class RBM(torch.nn.Module):
         classifier = RidgeClassifier().fit(x_train, y_train)
         y_pred = classifier.predict(x_test)
         
-        return accuracy_score(y_test, y_pred)
+        return accuracy_score(y_test, y_pred), classifier
     #end
     
     def save_topdown_act(self, act_hidden):
