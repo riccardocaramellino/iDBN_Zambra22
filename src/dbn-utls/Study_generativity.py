@@ -120,8 +120,8 @@ def load_data_ZAMBRA(CPARAMS,LPARAMS,Zambra_folder_drive):
             transforms.ToTensor()])
         data_train = datasets.CelebA(root='../data', split='train', download=True, transform=transform)
         data_test = datasets.CelebA(root='../data', split='test', download=True, transform=transform)      
-      train_data, train_labels = data_and_labels(data_train, BATCH_SIZE,NUM_FEAT)
-      test_data, test_labels = data_and_labels(data_test, BATCH_SIZE,NUM_FEAT)
+      train_data, train_labels = data_and_labels(data_train, BATCH_SIZE,NUM_FEAT,DATASET_ID,n_cols_labels)
+      test_data, test_labels = data_and_labels(data_test, BATCH_SIZE,NUM_FEAT,DATASET_ID,n_cols_labels)
 
       train_dataset = {'data': train_data, 'labels': train_labels}
       test_dataset = {'data': test_data, 'labels': test_labels}
