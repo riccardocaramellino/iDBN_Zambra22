@@ -21,7 +21,7 @@ from skimage.filters import threshold_sauvola
 from pathlib import Path
 from copy import deepcopy
 
-def data_and_labels(data_train, BATCH_SIZE,NUM_FEAT):
+def data_and_labels(data_train, BATCH_SIZE,NUM_FEAT,DATASET_ID,n_cols_labels):
   #This function prepares the data for processing by machine learning models (NOTE FOR THE WRITER: Be more specific)
   train_loader = DataLoader(data_train, batch_size=BATCH_SIZE, shuffle=True) #create a dataloader with the data shuffled
   num_batches = data_train.__len__() // BATCH_SIZE # Calculate the total number of batches (NOTE: data_train.__len__() is equivalent to len(data_train))
