@@ -25,7 +25,7 @@ class DBN(torch.nn.Module):
     def __init__(self, alg_name, dataset_id, init_scheme, path_model, epochs):
         super(DBN, self).__init__()
         
-        if dataset_id == 'MNIST':
+        if dataset_id == 'MNIST' or dataset_id == 'EMNIST':
             self.rbm_layers = [
                 rbms.RBM(784, 500, epochs,
                          layer_id = 0,  
