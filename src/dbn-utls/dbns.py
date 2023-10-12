@@ -35,7 +35,7 @@ class DBN(torch.nn.Module):
                          layer_id = 1,
                          init_scheme = init_scheme,
                          dataset_id = dataset_id),
-                rbms.RBM(500, 2000, epochs, #ORIGINALLY 500,1000
+                rbms.RBM(500, 1000, epochs, #ORIGINALLY 500,1000. 2000 in Zambra 2022
                          layer_id = 2, 
                          init_scheme = init_scheme, 
                          dataset_id = dataset_id)
