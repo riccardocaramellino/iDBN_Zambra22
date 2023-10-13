@@ -617,7 +617,7 @@ class Intersection_analysis_ZAMBRA:
 
       return digit_digit_common_elements_count_biasing
     
-    def generate_chimera_lbl_biasing(self,VGG_cl, elements_of_interest = [8,2], temperature=1, nr_of_examples = 1000, plot=0, entropy_correction=0):
+    def generate_chimera_lbl_biasing(self,VGG_cl, elements_of_interest = [8,2], temperature=1, nr_of_examples = 1000, plot=0, entropy_correction=[]):
       #this function does generation from chimeras obtained with the intersection method
       b_vec =torch.zeros(nr_of_examples,self.model.top_layer_size) 
       if not(elements_of_interest =='rand'): #if you don't want to generate from random chimeras
