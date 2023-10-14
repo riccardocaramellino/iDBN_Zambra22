@@ -84,44 +84,95 @@ def readout_V_to_Hlast(dbn,train_dataset,test_dataset, DEVICE='cuda', existing_c
   return readout_acc_V, classifier_list
 
 
-def get_retraining_data(MNIST_train_dataset):
+def get_retraining_data(dbn, classifier, MNIST_train_dataset, ds_type = 'EMNIST', half_MNIST_gen=True, Type_gen = 'chimeras'):
+  #Type_gen = 'chimeras'/'lbl_bias'/'mix'
   #NOTA: il labelling dell'EMNIST by class ha 62 labels: le cifre (0-9), lettere MAUSCOLE (10-36), lettere MINUSCOLE(38-62)
   #20,000 uppercase letters from the first 10 EMNIST classes.
-  nr_batches_retraining = round(20000/128)
+  nr_batches_retraining = round(20000/128) 
+  half_batches = round(nr_batches_retraining/2)
+  half_ds_size = half_batches*128 #i.e. 9984
   def decrease_labels_by_10(data): 
     image, label = data
     label -= 10  # Sottrai 10 da ciascuna etichetta
     return image, label
   #load  EMNIST byclass data
   transform =transforms.Compose([transforms.ToTensor()])
-  data_train_EMNIST = datasets.EMNIST('../data', train=True,split = 'byclass', download=True, transform=transform)
-  data_test_EMNIST = datasets.EMNIST('../data', train=False,split = 'byclass', download=True, transform=transform)
-  target_classes = list(range(10, 20)) #i.e. the first 10 capital letter classes
-  data_train_EMNIST = [item for item in data_train_EMNIST if item[1] in target_classes]
-  data_test_EMNIST = [item for item in data_test_EMNIST if item[1] in target_classes]
-  #i relabel data from 10-19 to 0-9
-  data_train_EMNIST = [decrease_labels_by_10(item) for item in data_train_EMNIST]
-  data_test_EMNIST = [decrease_labels_by_10(item) for item in data_test_EMNIST]
+  if ds_type == 'EMNIST':
+    data_train_retraining_ds = datasets.EMNIST('../data', train=True,split = 'byclass', download=True, transform=transform)
+    data_test_retraining_ds = datasets.EMNIST('../data', train=False,split = 'byclass', download=True, transform=transform)
+    target_classes = list(range(10, 20)) #i.e. the first 10 capital letter classes
+    data_train_retraining_ds = [item for item in data_train_retraining_ds if item[1] in target_classes]
+    data_test_retraining_ds = [item for item in data_test_retraining_ds if item[1] in target_classes]
+    #i relabel data from 10-19 to 0-9
+    data_train_retraining_ds = [decrease_labels_by_10(item) for item in data_train_retraining_ds]
+    data_test_retraining_ds = [decrease_labels_by_10(item) for item in data_test_retraining_ds]
+  elif ds_type == 'fMNIST':
+    data_train_retraining_ds = datasets.FashionMNIST('../data', train=True, download=True, transform=transform)
+    data_test_retraining_ds = datasets.FashionMNIST('../data', train=False, download=True, transform=transform)
 
-  train_data_EMNIST, train_labels_EMNIST = data_and_labels(data_train_EMNIST, BATCH_SIZE=128,NUM_FEAT=np.int32(28*28),DATASET_ID='MNIST',n_cols_labels=1)
-  test_data_EMNIST, test_labels_EMNIST = data_and_labels(data_test_EMNIST, BATCH_SIZE=128,NUM_FEAT=np.int32(28*28),DATASET_ID='MNIST',n_cols_labels=1)
+
+  train_data_retraining_ds, train_labels_retraining_ds = data_and_labels(data_train_retraining_ds, BATCH_SIZE=128,NUM_FEAT=np.int32(28*28),DATASET_ID='MNIST',n_cols_labels=1)
+  test_data_retraining_ds, test_labels_retraining_ds = data_and_labels(data_test_retraining_ds, BATCH_SIZE=128,NUM_FEAT=np.int32(28*28),DATASET_ID='MNIST',n_cols_labels=1)
   
-  #i select just 20000 examples
-  train_data_EMNIST = train_data_EMNIST[:nr_batches_retraining,:,:]
-  train_labels_EMNIST = train_labels_EMNIST[:nr_batches_retraining,:,:]
-  train_dataset_EMNIST = {'data': train_data_EMNIST, 'labels': train_labels_EMNIST}
-  test_dataset_EMNIST = {'data': test_data_EMNIST, 'labels': test_labels_EMNIST}
+  #i select just 20000 examples (19968 per l'esattezza)
+  train_data_retraining_ds = train_data_retraining_ds[:nr_batches_retraining,:,:]
+  train_labels_retraining_ds = train_labels_retraining_ds[:nr_batches_retraining,:,:]
+  train_dataset_retraining_ds = {'data': train_data_retraining_ds, 'labels': train_labels_retraining_ds}
+  test_dataset_retraining_ds = {'data': test_data_retraining_ds, 'labels': test_labels_retraining_ds}
+  if not(half_MNIST_gen):
+     half_MNIST = MNIST_train_dataset['data'][:half_batches,:,:].to('cuda')
+  else:
+    for dig in range(dbn.Num_classes): #at the end of this loop, you have one example of label biasing per class
+        g_H = label_biasing_ZAMBRA(dbn, on_digits=dig, topk = -1)
+        if dig == 0:
+            g_H0to9 = g_H
+        else:
+            g_H0to9 = torch.hstack((g_H0to9,g_H)) #final size: [1000, 10]
+    gen_hidden_100rep = g_H0to9.repeat(1,1000)
+    VStack_labels=torch.tensor(range(dbn.Num_classes), device = 'cuda')
+    VStack_labels=VStack_labels.repeat(1000)
+    dict_DBN_lBias_classic = generate_from_hidden_ZAMBRA(dbn, gen_hidden_100rep, nr_gen_steps=10)
+    
+    if Type_gen == 'lbl_bias':
+      Vis_states = dict_DBN_lBias_classic['vis_states'].permute(0, 2, 1)
+      Vis_states = Vis_states.reshape(Vis_states.shape[0]*Vis_states.shape[1],Vis_states.shape[2]) #Vis_states.shape[2]=784
+      indices = torch.randperm(Vis_states.size(0))[:half_ds_size]
+      # Sample the rows using the generated indices
+      sampled_data = Vis_states[indices]
+       
+    else:
+       Mean, _ = Perc_H_act(dbn, VStack_labels, gen_data_dictionary=dict_DBN_lBias_classic, dS = 50, l_sz = 5, layer_of_interest=2)
+       k = int((torch.mean(Mean, axis=0)[0]*dbn.top_layer_size)/100)
+       Ian = Intersection_analysis_ZAMBRA(dbn, top_k_Hidden=k,nr_steps=10)
+       digit_digit_common_elements_count_biasing = Ian.do_intersection_analysis()
+       c=0
+       for row in range(10):
+          for col in range(row,10):
+            d, df_average,df_sem, Transition_matrix_rowNorm = Ian.generate_chimera_lbl_biasing(classifier,elements_of_interest = [row,col], nr_of_examples = 20, temperature = 1, plot=0, entropy_correction=[])
+            if c==0:
+                Chim_gen_ds = d['vis_states'][:,:,:10]
+            else:
+                Chim_gen_ds = torch.cat((Chim_gen_ds, d['vis_states'][:,:,:10]), dim=0)
+            c=c+1
 
-  half_EMNIST = train_dataset_EMNIST['data'][:(nr_batches_retraining//2),:,:].to('cuda')
-  half_MNIST = MNIST_train_dataset['data'][:(nr_batches_retraining//2),:,:].to('cuda')
-  mix_EMNIST_MNIST = torch.cat((half_MNIST, half_EMNIST), dim=0)
+       Vis_states_chimera = Chim_gen_ds.permute(0, 2, 1)
+       Vis_states_chimera = Vis_states_chimera.reshape(Vis_states_chimera.shape[0]*Vis_states_chimera.shape[1],Vis_states_chimera.shape[2]) #Vis_states.shape[2]=784
+       indices = torch.randperm(Vis_states_chimera.size(0))[:half_ds_size]
+       # Sample the rows using the generated indices
+       sampled_data = Vis_states_chimera[indices] 
+
+    half_MNIST = sampled_data.view(half_batches, 128, 784)
+
+  half_retraining_ds = train_dataset_retraining_ds['data'][:half_batches,:,:].to('cuda')
+  
+  mix_retraining_ds_MNIST = torch.cat((half_MNIST, half_retraining_ds), dim=0)
  
   # Generate a random permutation of indices
   permuted_indices = torch.randperm(nr_batches_retraining)
   # Use the permutation to shuffle the examples of the dataset
-  mix_EMNIST_MNIST = mix_EMNIST_MNIST[permuted_indices]
+  mix_retraining_ds_MNIST = mix_retraining_ds_MNIST[permuted_indices]
   
-  return train_dataset_EMNIST,test_dataset_EMNIST,mix_EMNIST_MNIST
+  return train_dataset_retraining_ds,test_dataset_retraining_ds,mix_retraining_ds_MNIST
 
 def get_ridge_classifiers(MNIST_Train_DS, MNIST_Test_DS):
   Zambra_folder_drive = '/content/gdrive/My Drive/ZAMBRA_DBN/'
