@@ -84,7 +84,7 @@ def readout_V_to_Hlast(dbn,train_dataset,test_dataset, DEVICE='cuda', existing_c
   return readout_acc_V, classifier_list
 
 
-def get_retraining_data(dbn, classifier, MNIST_train_dataset, ds_type = 'EMNIST', half_MNIST_gen=True, Type_gen = 'chimeras'):
+def get_retraining_data(MNIST_train_dataset,dbn=[], classifier=[],  ds_type = 'EMNIST', half_MNIST_gen=True, Type_gen = 'chimeras'):
   #Type_gen = 'chimeras'/'lbl_bias'/'mix'
   #NOTA: il labelling dell'EMNIST by class ha 62 labels: le cifre (0-9), lettere MAUSCOLE (10-36), lettere MINUSCOLE(38-62)
   #20,000 uppercase letters from the first 10 EMNIST classes.
@@ -119,6 +119,8 @@ def get_retraining_data(dbn, classifier, MNIST_train_dataset, ds_type = 'EMNIST'
   train_labels_retraining_ds = train_labels_retraining_ds[:nr_batches_retraining,:,:]
   train_dataset_retraining_ds = {'data': train_data_retraining_ds, 'labels': train_labels_retraining_ds}
   test_dataset_retraining_ds = {'data': test_data_retraining_ds, 'labels': test_labels_retraining_ds}
+  if dbn==[]:
+     return train_dataset_retraining_ds,test_dataset_retraining_ds
   if not(half_MNIST_gen):
      half_MNIST = MNIST_train_dataset['data'][:half_batches,:,:].to('cuda')
   else:
@@ -174,14 +176,14 @@ def get_retraining_data(dbn, classifier, MNIST_train_dataset, ds_type = 'EMNIST'
   
   return train_dataset_retraining_ds,test_dataset_retraining_ds,mix_retraining_ds_MNIST
 
-def get_ridge_classifiers(MNIST_Train_DS, MNIST_Test_DS):
+def get_ridge_classifiers(MNIST_Train_DS, MNIST_Test_DS, Force_relearning = True):
   Zambra_folder_drive = '/content/gdrive/My Drive/ZAMBRA_DBN/'
   MNIST_rc_file= os.path.join(Zambra_folder_drive,'MNIST_ridge_classifiers.pkl')
   EMNIST_rc_file= os.path.join(Zambra_folder_drive,'EMNIST_ridge_classifiers.pkl')
   print("\033[1m Make sure that your iDBN was trained only with MNIST for 100 epochs \033[0m")
   DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
   dbn,train_dataset, test_dataset,classifier= tool_loader_ZAMBRA(DEVICE,  selected_idx = [20,31], half_data=False, only_data = False)
-  if not(os.path.exists(MNIST_rc_file)):
+  if not(os.path.exists(MNIST_rc_file)) or Force_relearning:
     readout_acc_V, MNIST_classifier_list = readout_V_to_Hlast(dbn,MNIST_Train_DS, MNIST_Test_DS)
     # Save the list of classifiers to a file
     with open(MNIST_rc_file, 'wb') as file:
@@ -190,8 +192,8 @@ def get_ridge_classifiers(MNIST_Train_DS, MNIST_Test_DS):
     with open(MNIST_rc_file, 'rb') as file:
       MNIST_classifier_list = pickle.load(file)# Load the list of classifiers from the file
 
-  if not(os.path.exists(EMNIST_rc_file)):
-    train_dataset_EMNIST,test_dataset_EMNIST,mix_EMNIST_MNIST =get_retraining_data(train_dataset)
+  if not(os.path.exists(EMNIST_rc_file)) or Force_relearning:
+    train_dataset_EMNIST,test_dataset_EMNIST, _ =get_retraining_data(train_dataset)
     Xtrain = train_dataset_EMNIST['data'].to(DEVICE)
     Xtest  = test_dataset_EMNIST['data'].to(DEVICE)
     Ytrain = train_dataset_EMNIST['labels'].to(DEVICE)
