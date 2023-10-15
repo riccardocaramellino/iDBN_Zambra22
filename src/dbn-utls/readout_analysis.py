@@ -226,20 +226,21 @@ def relearning(retrain_ds_type = 'EMNIST', mixing_type =[]):
     type_retrain = 'interleaved'
     if mixing_type==[]:
         mixing_type_options_list = '\n'.join([f'{i}: {opt}' for i, opt in enumerate(mixing_type_options)]) # questa linea serve per creare il prompt di selezione del soggetto
-        mixing_type_idx = int(input('Which subject?\n'+mixing_type_options_list))
+        mixing_type_idx = int(input('Which mixing type for retraining?\n'+mixing_type_options_list))
         mixing_type = mixing_type_options[mixing_type_idx]
         type_mix = 'mix_'+mixing_type
-        if mixing_type=='[]':
-           mixing_type==[]
-           type_retrain = 'sequential'
-           type_mix = ''
+
+    if mixing_type=='[]':
+        mixing_type==[]
+        type_retrain = 'sequential'
+        type_mix = ''
     
     if mixing_type == 'origMNIST':
        half_MNIST_gen_option = False
     else:
        half_MNIST_gen_option = True
 
-    Retrain_ds,Retrain_test_ds,mix_retrain_ds = get_retraining_data(MNISTtrain_ds,dbn, classifier,  ds_type = retrain_ds_type, half_MNIST_gen=half_MNIST_gen_option, Type_gen = 'chimeras')
+    Retrain_ds,Retrain_test_ds,mix_retrain_ds = get_retraining_data(MNISTtrain_ds,dbn, classifier,  ds_type = retrain_ds_type, half_MNIST_gen=half_MNIST_gen_option, Type_gen = mixing_type)
     MNIST_classifier_list, _ = get_ridge_classifiers(MNISTtrain_ds, MNISTtest_ds,Force_relearning = False)
 
     
