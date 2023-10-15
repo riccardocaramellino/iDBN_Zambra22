@@ -215,3 +215,77 @@ def get_ridge_classifiers(MNIST_Train_DS, MNIST_Test_DS, Force_relearning = True
     with open(EMNIST_rc_file, 'rb') as file:
       EMNIST_classifier_list = pickle.load(file)# Load the list of classifiers from the file
   return MNIST_classifier_list, EMNIST_classifier_list
+
+
+
+
+def relearning(classifier, MNISTtrain_ds, MNISTtest_ds, retrain_ds_type = 'EMNIST', mixing_type =[]):
+    mixing_type_options = ['origMNIST', 'lbl_bias', 'chimeras','[]']
+    type_retrain = 'interleaved'
+    if mixing_type==[]:
+        mixing_type_options_list = '\n'.join([f'{i}: {opt}' for i, opt in enumerate(mixing_type_options)]) # questa linea serve per creare il prompt di selezione del soggetto
+        mixing_type_idx = int(input('Which subject?\n'+mixing_type_options_list))
+        mixing_type = mixing_type_options[mixing_type_idx]
+        type_mix = 'mix_'+mixing_type
+        if mixing_type=='[]':
+           mixing_type==[]
+           type_retrain = 'sequential'
+           type_mix = ''
+    
+    if mixing_type == 'origMNIST':
+       half_MNIST_gen_option = False
+    else:
+       half_MNIST_gen_option = True
+
+    Retrain_ds,Retrain_test_ds,mix_retrain_ds = get_retraining_data(MNISTtrain_ds,dbn, classifier,  ds_type = retrain_ds_type, half_MNIST_gen=half_MNIST_gen_option, Type_gen = 'chimeras')
+    MNIST_classifier_list, _ = get_ridge_classifiers(MNISTtrain_ds, MNISTtest_ds,Force_relearning = False)
+
+    DEVICE='cuda'
+    dbn,train_dataset, test_dataset,_= tool_loader_ZAMBRA(DEVICE,  selected_idx = [20,31], half_data=False, only_data = False)
+    Zambra_folder_drive = '/content/gdrive/My Drive/ZAMBRA_DBN/'
+    DATASET_ID='MNIST'
+
+    with open(os.path.join(Zambra_folder_drive, f'lparams-{DATASET_ID.lower()}.json'), 'r') as filestream:
+        LPARAMS = json.load(filestream)
+    with open(os.path.join(Zambra_folder_drive, 'cparams.json'), 'r') as filestream:
+        CPARAMS = json.load(filestream)
+    LPARAMS['EPOCHS']=5 #i will checj t
+    READOUT = CPARAMS['READOUT']
+    NUM_DISCR = CPARAMS['NUM_DISCR']
+
+    if mixing_type == []:
+        Xtrain = Retrain_ds['data'].to(DEVICE)
+    else:
+       Xtrain = mix_retrain_ds.to(DEVICE)
+    Xtest  = Retrain_test_ds['data'].to(DEVICE)
+    Ytrain = Retrain_ds['labels'].to(DEVICE)
+    Ytest  = Retrain_test_ds['labels'].to(DEVICE)
+    nr_iter_training=20
+    readout_acc_Seq_DIGITS = np.zeros((nr_iter_training+1,4))
+    readout_acc_V_DIGITS,_ = readout_V_to_Hlast(dbn,train_dataset,test_dataset,existing_classifier_list = MNIST_classifier_list)
+    readout_acc_Seq_DIGITS[0,:] = readout_acc_V_DIGITS
+
+    readout_acc_Seq_RETRAINING_DS = np.zeros((nr_iter_training+1,4))
+    readout_acc_V_LETTERS,_ = readout_V_to_Hlast(dbn,Retrain_ds,Retrain_test_ds)
+    readout_acc_Seq_RETRAINING_DS[0,:] = readout_acc_V_LETTERS
+
+    for iteration in range(nr_iter_training):
+        dbn.train(Xtrain, Xtest, Ytrain, Ytest, LPARAMS, readout = READOUT, num_discr = NUM_DISCR)
+        readout_acc_V_DIGITS,_ = readout_V_to_Hlast(dbn,train_dataset,test_dataset,existing_classifier_list = MNIST_classifier_list)
+        readout_acc_Seq_DIGITS[iteration+1,:] = readout_acc_V_DIGITS
+
+        readout_acc_V_LETTERS,_ = readout_V_to_Hlast(dbn,Retrain_ds,Retrain_test_ds)
+        readout_acc_Seq_RETRAINING_DS[iteration+1,:] = readout_acc_V_LETTERS
+    # Creare un DataFrame da questi dati
+    df_readout_RETRAINING_DS = pd.DataFrame(readout_acc_Seq_RETRAINING_DS)
+    # Salva il DataFrame in un file Excel
+    df_readout_RETRAINING_DS.to_excel('Readout_on_'+retrain_ds_type+'_retrain_on_'+retrain_ds_type+'_'+type_retrain+'_'+type_mix+'.xlsx', index=False, header=False)
+    Readout_last_layer_RETRAINING_DS = df_readout_RETRAINING_DS.values[:, len(dbn.rbm_layers)]
+
+    # Creare un DataFrame da questi dati
+    df_readout_MNIST = pd.DataFrame(readout_acc_Seq_DIGITS)
+    # Salva il DataFrame in un file Excel
+    df_readout_MNIST.to_excel('Readout_on_MNIST_retrain_on_'+retrain_ds_type+'_'+type_retrain+'_'+type_mix+'.xlsx', index=False, header=False)
+    Readout_last_layer_MNIST = df_readout_MNIST.values[:, len(dbn.rbm_layers)]
+
+    return Readout_last_layer_MNIST, Readout_last_layer_RETRAINING_DS
