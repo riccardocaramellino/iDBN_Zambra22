@@ -182,7 +182,7 @@ def get_ridge_classifiers(MNIST_Train_DS, MNIST_Test_DS, Force_relearning = True
   EMNIST_rc_file= os.path.join(Zambra_folder_drive,'EMNIST_ridge_classifiers.pkl')
   print("\033[1m Make sure that your iDBN was trained only with MNIST for 100 epochs \033[0m")
   DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-  dbn,train_dataset, test_dataset,classifier= tool_loader_ZAMBRA(DEVICE,  selected_idx = [20,31], half_data=False, only_data = False)
+  dbn,train_dataset, test_dataset,classifier= tool_loader_ZAMBRA(DEVICE, only_data = False, Load_DBN_yn = 1)
   if not(os.path.exists(MNIST_rc_file)) or Force_relearning:
     readout_acc_V, MNIST_classifier_list = readout_V_to_Hlast(dbn,MNIST_Train_DS, MNIST_Test_DS)
     # Save the list of classifiers to a file
@@ -219,7 +219,9 @@ def get_ridge_classifiers(MNIST_Train_DS, MNIST_Test_DS, Force_relearning = True
 
 
 
-def relearning(classifier, MNISTtrain_ds, MNISTtest_ds, retrain_ds_type = 'EMNIST', mixing_type =[]):
+def relearning(retrain_ds_type = 'EMNIST', mixing_type =[]):
+    DEVICE='cuda'
+    dbn,MNISTtrain_ds, MNISTtest_ds,classifier= tool_loader_ZAMBRA(DEVICE, only_data = False,Load_DBN_yn = 1)
     mixing_type_options = ['origMNIST', 'lbl_bias', 'chimeras','[]']
     type_retrain = 'interleaved'
     if mixing_type==[]:
@@ -240,8 +242,8 @@ def relearning(classifier, MNISTtrain_ds, MNISTtest_ds, retrain_ds_type = 'EMNIS
     Retrain_ds,Retrain_test_ds,mix_retrain_ds = get_retraining_data(MNISTtrain_ds,dbn, classifier,  ds_type = retrain_ds_type, half_MNIST_gen=half_MNIST_gen_option, Type_gen = 'chimeras')
     MNIST_classifier_list, _ = get_ridge_classifiers(MNISTtrain_ds, MNISTtest_ds,Force_relearning = False)
 
-    DEVICE='cuda'
-    dbn,train_dataset, test_dataset,_= tool_loader_ZAMBRA(DEVICE,  selected_idx = [20,31], half_data=False, only_data = False)
+    
+    dbn,train_dataset, test_dataset,_= tool_loader_ZAMBRA(DEVICE, only_data = False,Load_DBN_yn = 1)
     Zambra_folder_drive = '/content/gdrive/My Drive/ZAMBRA_DBN/'
     DATASET_ID='MNIST'
 
