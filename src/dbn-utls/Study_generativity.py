@@ -255,7 +255,7 @@ def Multiclass_dataset(train_dataset, selected_idx = [20,31], for_classifier = F
 
 
 
-def tool_loader_ZAMBRA(DEVICE,  selected_idx = [], half_data=False, only_data = True,classifier_yn = True):
+def tool_loader_ZAMBRA(DEVICE,  selected_idx = [], only_data = True,classifier_yn = True, Load_DBN_yn = 3):
   from google.colab import drive
   drive.mount('/content/gdrive')
   Zambra_folder_drive = '/content/gdrive/My Drive/ZAMBRA_DBN/'
@@ -313,9 +313,9 @@ def tool_loader_ZAMBRA(DEVICE,  selected_idx = [], half_data=False, only_data = 
 
   if torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor') #PyTorch will use GPU (CUDA) tensors as the default tensor type.
+  if not(Load_DBN_yn == 0 or Load_DBN_yn == 1):
+    Load_DBN_yn = int(input('Do you want to load a iDBN (Zambra 22 style) or do you want to train it? (1=yes, 0=no)'))
 
-  Load_DBN_yn = int(input('Do you want to load a iDBN (Zambra 22 style) or do you want to train it? (1=yes, 0=no)'))
-  
   if Load_DBN_yn == 0: #if the user chose to train a iDBN from scratch...
     #i divide the labels (Y) from the training examples (X), both for train and test
     Xtrain = train_dataset['data'].to(DEVICE)
