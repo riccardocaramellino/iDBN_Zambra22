@@ -231,7 +231,7 @@ def relearning(retrain_ds_type = 'EMNIST', mixing_type =[]):
         type_mix = 'mix_'+mixing_type
 
     if mixing_type=='[]':
-        mixing_type==[]
+        mixing_type=[]
         type_retrain = 'sequential'
         type_mix = ''
     
