@@ -640,8 +640,8 @@ class Intersection_analysis_ZAMBRA:
       d = Classifier_accuracy(d, VGG_cl, self.model, plot=plot, Thresholding_entropy=entropy_correction) #compute the accuracy of the classifier over the generation period
       df_average,df_sem, Transition_matrix_rowNorm = classification_metrics(d,self.model, Plot=plot, Ian=1)
       
-      if nr_of_examples < 16:
-        Plot_example_generated(d, self.model ,row_step = 10, dS=20, custom_steps = True, Show_classification = False)
+      # if nr_of_examples < 16:
+      #   Plot_example_generated(d, self.model ,row_step = 10, dS=20, custom_steps = True, Show_classification = False)
 
       
       return d, df_average,df_sem, Transition_matrix_rowNorm
