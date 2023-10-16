@@ -84,7 +84,7 @@ def readout_V_to_Hlast(dbn,train_dataset,test_dataset, DEVICE='cuda', existing_c
   return readout_acc_V, classifier_list
 
 
-def get_retraining_data(MNIST_train_dataset,n_steps_generation = 10, dbn=[], classifier=[],  ds_type = 'EMNIST', half_MNIST_gen=True, Type_gen = 'chimeras'):
+def get_retraining_data(MNIST_train_dataset, dbn=[], classifier=[], n_steps_generation = 10, ds_type = 'EMNIST', half_MNIST_gen=True, Type_gen = 'chimeras'):
   #Type_gen = 'chimeras'/'lbl_bias'/'mix'
   #NOTA: il labelling dell'EMNIST by class ha 62 labels: le cifre (0-9), lettere MAUSCOLE (10-36), lettere MINUSCOLE(38-62)
   #20,000 uppercase letters from the first 10 EMNIST classes.
@@ -221,7 +221,7 @@ def get_ridge_classifiers(MNIST_Train_DS, MNIST_Test_DS, Force_relearning = True
 
 
 
-def relearning(retrain_ds_type = 'EMNIST', mixing_type =[]):
+def relearning(retrain_ds_type = 'EMNIST', mixing_type =[], n_steps_generation=10):
     DEVICE='cuda'
     dbn,MNISTtrain_ds, MNISTtest_ds,classifier= tool_loader_ZAMBRA(DEVICE, only_data = False,Load_DBN_yn = 1)
     mixing_type_options = ['origMNIST', 'lbl_bias', 'chimeras','[]']
@@ -243,7 +243,7 @@ def relearning(retrain_ds_type = 'EMNIST', mixing_type =[]):
     else:
        half_MNIST_gen_option = True
 
-    Retrain_ds,Retrain_test_ds,mix_retrain_ds = get_retraining_data(MNISTtrain_ds,dbn, classifier,  ds_type = retrain_ds_type, half_MNIST_gen=half_MNIST_gen_option, Type_gen = mixing_type)
+    Retrain_ds,Retrain_test_ds,mix_retrain_ds = get_retraining_data(MNISTtrain_ds,dbn, classifier,n_steps_generation = n_steps_generation,  ds_type = retrain_ds_type, half_MNIST_gen=half_MNIST_gen_option, Type_gen = mixing_type)
     MNIST_classifier_list, _ = get_ridge_classifiers(MNISTtrain_ds, MNISTtest_ds,Force_relearning = False)
 
     
