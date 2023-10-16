@@ -224,6 +224,7 @@ def relearning(retrain_ds_type = 'EMNIST', mixing_type =[]):
     dbn,MNISTtrain_ds, MNISTtest_ds,classifier= tool_loader_ZAMBRA(DEVICE, only_data = False,Load_DBN_yn = 1)
     mixing_type_options = ['origMNIST', 'lbl_bias', 'chimeras','[]']
     type_retrain = 'interleaved'
+    type_mix = 'mix_'+mixing_type
     if mixing_type==[]:
         mixing_type_options_list = '\n'.join([f'{i}: {opt}' for i, opt in enumerate(mixing_type_options)]) # questa linea serve per creare il prompt di selezione del soggetto
         mixing_type_idx = int(input('Which mixing type for retraining?\n'+mixing_type_options_list))
