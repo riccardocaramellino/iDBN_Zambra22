@@ -84,7 +84,7 @@ def readout_V_to_Hlast(dbn,train_dataset,test_dataset, DEVICE='cuda', existing_c
   return readout_acc_V, classifier_list
 
 
-def get_retraining_data(MNIST_train_dataset,dbn=[], classifier=[],  ds_type = 'EMNIST', half_MNIST_gen=True, Type_gen = 'chimeras'):
+def get_retraining_data(MNIST_train_dataset,n_steps_generation = 10, dbn=[], classifier=[],  ds_type = 'EMNIST', half_MNIST_gen=True, Type_gen = 'chimeras'):
   #Type_gen = 'chimeras'/'lbl_bias'/'mix'
   #NOTA: il labelling dell'EMNIST by class ha 62 labels: le cifre (0-9), lettere MAUSCOLE (10-36), lettere MINUSCOLE(38-62)
   #20,000 uppercase letters from the first 10 EMNIST classes.
@@ -130,10 +130,11 @@ def get_retraining_data(MNIST_train_dataset,dbn=[], classifier=[],  ds_type = 'E
             g_H0to9 = g_H
         else:
             g_H0to9 = torch.hstack((g_H0to9,g_H)) #final size: [1000, 10]
-    gen_hidden_100rep = g_H0to9.repeat(1,1000)
+    n_samples = math.ceil(10000/(10*n_steps_generation))
+    gen_hidden_100rep = g_H0to9.repeat(1,n_samples)
     VStack_labels=torch.tensor(range(dbn.Num_classes), device = 'cuda')
-    VStack_labels=VStack_labels.repeat(1000)
-    dict_DBN_lBias_classic = generate_from_hidden_ZAMBRA(dbn, gen_hidden_100rep, nr_gen_steps=10)
+    VStack_labels=VStack_labels.repeat(n_samples)
+    dict_DBN_lBias_classic = generate_from_hidden_ZAMBRA(dbn, gen_hidden_100rep, nr_gen_steps=n_steps_generation)
     
     if Type_gen == 'lbl_bias':
       Vis_states = dict_DBN_lBias_classic['vis_states'].permute(0, 2, 1)
@@ -145,16 +146,17 @@ def get_retraining_data(MNIST_train_dataset,dbn=[], classifier=[],  ds_type = 'E
     else:
        Mean, _ = Perc_H_act(dbn, VStack_labels, gen_data_dictionary=dict_DBN_lBias_classic, dS = 50, l_sz = 5, layer_of_interest=2)
        k = int((torch.mean(Mean, axis=0)[0]*dbn.top_layer_size)/100)
-       Ian = Intersection_analysis_ZAMBRA(dbn, top_k_Hidden=k,nr_steps=10)
+       Ian = Intersection_analysis_ZAMBRA(dbn, top_k_Hidden=k,nr_steps=n_steps_generation)
        digit_digit_common_elements_count_biasing = Ian.do_intersection_analysis()
+       n_samples = math.ceil(10000/(45*n_steps_generation))
        c=0
        for row in range(10):
-          for col in range(row,10):
-            d, df_average,df_sem, Transition_matrix_rowNorm = Ian.generate_chimera_lbl_biasing(classifier,elements_of_interest = [row,col], nr_of_examples = 20, temperature = 1, plot=0, entropy_correction=[])
+          for col in range(row+1,10): #45 combinations(upper diagonal)
+            d, df_average,df_sem, Transition_matrix_rowNorm = Ian.generate_chimera_lbl_biasing(classifier,elements_of_interest = [row,col], nr_of_examples = n_samples, temperature = 1, plot=0, entropy_correction=[])
             if c==0:
-                Chim_gen_ds = d['vis_states'][:,:,:10]
+                Chim_gen_ds = d['vis_states'][:,:,:n_steps_generation]
             else:
-                Chim_gen_ds = torch.cat((Chim_gen_ds, d['vis_states'][:,:,:10]), dim=0)
+                Chim_gen_ds = torch.cat((Chim_gen_ds, d['vis_states'][:,:,:n_steps_generation]), dim=0)
             c=c+1
 
        Vis_states_chimera = Chim_gen_ds.permute(0, 2, 1)
