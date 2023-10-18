@@ -95,7 +95,7 @@ def get_relative_freq(valore, hist, bin_edges,numero_bin=30):
     else:
         return 0.0  # Il valore è al di fuori dei bin
 
-def get_retraining_data(MNIST_train_dataset, dbn=[], classifier=[], n_steps_generation = 10, ds_type = 'EMNIST', half_MNIST_gen=True, Type_gen = 'chimeras', selection_gen = False):
+def get_retraining_data(MNIST_train_dataset, dbn=[], classifier=[], n_steps_generation = 10, ds_type = 'EMNIST', half_MNIST_gen=True, Type_gen = 'chimeras', selection_gen = False, correction_type = 'frequency'):
   #Type_gen = 'chimeras'/'lbl_bias'/'mix'
   #NOTA: il labelling dell'EMNIST by class ha 62 labels: le cifre (0-9), lettere MAUSCOLE (10-36), lettere MINUSCOLE(38-62)
   #20,000 uppercase letters from the first 10 EMNIST classes.
@@ -105,7 +105,7 @@ def get_retraining_data(MNIST_train_dataset, dbn=[], classifier=[], n_steps_gene
   half_ds_size = half_batches*128 #i.e. 9984
   
   if selection_gen == True and half_MNIST_gen==True:
-    coeff = 1.5 #moltiplicatore del
+    coeff = 2 #moltiplicatore del
     vectors = []
     for batch in MNIST_train_dataset['data']: #one batch at a time
         vectors.append(torch.mean(batch,axis = 1))
@@ -160,7 +160,7 @@ def get_retraining_data(MNIST_train_dataset, dbn=[], classifier=[], n_steps_gene
     if Type_gen == 'lbl_bias':
       Vis_states = dict_DBN_lBias_classic['vis_states'].permute(0, 2, 1)
       Vis_states = Vis_states.reshape(Vis_states.shape[0]*Vis_states.shape[1],Vis_states.shape[2]) #Vis_states.shape[2]=784
-      indices = torch.randperm(Vis_states.size(0))[:half_ds_size*coeff]
+      indices = torch.randperm(Vis_states.size(0))[:math.ceil(half_ds_size*coeff)]
       # Sample the rows using the generated indices
       sampled_data = Vis_states[indices]
        
@@ -182,7 +182,7 @@ def get_retraining_data(MNIST_train_dataset, dbn=[], classifier=[], n_steps_gene
 
        Vis_states_chimera = Chim_gen_ds.permute(0, 2, 1)
        Vis_states_chimera = Vis_states_chimera.reshape(Vis_states_chimera.shape[0]*Vis_states_chimera.shape[1],Vis_states_chimera.shape[2]) #Vis_states.shape[2]=784
-       indices = torch.randperm(Vis_states_chimera.size(0))[:half_ds_size*coeff]
+       indices = torch.randperm(Vis_states_chimera.size(0))[:math.ceil(half_ds_size*coeff)]
        # Sample the rows using the generated indices
        sampled_data = Vis_states_chimera[indices]
     
@@ -194,11 +194,16 @@ def get_retraining_data(MNIST_train_dataset, dbn=[], classifier=[], n_steps_gene
         for i in range(avg_activity_sampled_data.size(0)):
             value = avg_activity_sampled_data[i].item()
             results[i] = get_relative_freq(value, hist, bin_edges)
+        if correction_type == 'frequency':
+          top_indices = torch.topk(results, k=half_ds_size).indices
+        else:
+          top_indices = torch.tensor(np.where(results.cpu() != 0)[0])
+          random_indices = torch.randperm(top_indices.size(0))
+          top_indices = top_indices[random_indices[:half_ds_size]]
 
-        top_indices = torch.topk(results, k=half_ds_size).indices
         sampled_data = sampled_data[top_indices]
         avg_activity_sampled_data_topK =  torch.mean(sampled_data,axis = 1)
-
+        plt.figure()
         plt.hist(avg_pixels_active_TrainMNIST.cpu(), bins=30, color='blue', alpha=0.7,density=True, label='MNIST train set')  # You can adjust the number of bins as needed
         plt.hist(avg_activity_sampled_data.cpu(), bins=30, color='red', alpha=0.7,density=True, label='Generated data - no correction')
         plt.hist(avg_activity_sampled_data_topK.cpu(), bins=30, color='orange', alpha=0.7,density=True, label='Generated data - corrected')
@@ -264,7 +269,7 @@ def get_ridge_classifiers(MNIST_Train_DS, MNIST_Test_DS, Force_relearning = True
 
 
 
-def relearning(retrain_ds_type = 'EMNIST', mixing_type =[], n_steps_generation=10, selection_gen = False):
+def relearning(retrain_ds_type = 'EMNIST', mixing_type =[], n_steps_generation=10, selection_gen = False, correction_type = 'frequency'):
     DEVICE='cuda'
     dbn,MNISTtrain_ds, MNISTtest_ds,classifier= tool_loader_ZAMBRA(DEVICE, only_data = False,Load_DBN_yn = 1)
     mixing_type_options = ['origMNIST', 'lbl_bias', 'chimeras','[]']
@@ -286,7 +291,7 @@ def relearning(retrain_ds_type = 'EMNIST', mixing_type =[], n_steps_generation=1
     else:
        half_MNIST_gen_option = True
 
-    Retrain_ds,Retrain_test_ds,mix_retrain_ds = get_retraining_data(MNISTtrain_ds,dbn, classifier,n_steps_generation = n_steps_generation,  ds_type = retrain_ds_type, half_MNIST_gen=half_MNIST_gen_option, Type_gen = mixing_type, selection_gen = selection_gen)
+    Retrain_ds,Retrain_test_ds,mix_retrain_ds = get_retraining_data(MNISTtrain_ds,dbn, classifier,n_steps_generation = n_steps_generation,  ds_type = retrain_ds_type, half_MNIST_gen=half_MNIST_gen_option, Type_gen = mixing_type, selection_gen = selection_gen, correction_type = correction_type)
     MNIST_classifier_list, _ = get_ridge_classifiers(MNISTtrain_ds, MNISTtest_ds,Force_relearning = False)
 
     
@@ -309,7 +314,7 @@ def relearning(retrain_ds_type = 'EMNIST', mixing_type =[], n_steps_generation=1
     Xtest  = Retrain_test_ds['data'].to(DEVICE)
     Ytrain = Retrain_ds['labels'].to(DEVICE)
     Ytest  = Retrain_test_ds['labels'].to(DEVICE)
-    nr_iter_training=20
+    nr_iter_training=10
     readout_acc_Seq_DIGITS = np.zeros((nr_iter_training+1,4))
     readout_acc_V_DIGITS,_ = readout_V_to_Hlast(dbn,train_dataset,test_dataset,existing_classifier_list = MNIST_classifier_list)
     readout_acc_Seq_DIGITS[0,:] = readout_acc_V_DIGITS
