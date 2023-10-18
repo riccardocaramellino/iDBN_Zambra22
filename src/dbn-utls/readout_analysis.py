@@ -264,7 +264,7 @@ def get_ridge_classifiers(MNIST_Train_DS, MNIST_Test_DS, Force_relearning = True
 
 
 
-def relearning(retrain_ds_type = 'EMNIST', mixing_type =[], n_steps_generation=10):
+def relearning(retrain_ds_type = 'EMNIST', mixing_type =[], n_steps_generation=10, selection_gen = False):
     DEVICE='cuda'
     dbn,MNISTtrain_ds, MNISTtest_ds,classifier= tool_loader_ZAMBRA(DEVICE, only_data = False,Load_DBN_yn = 1)
     mixing_type_options = ['origMNIST', 'lbl_bias', 'chimeras','[]']
@@ -286,7 +286,7 @@ def relearning(retrain_ds_type = 'EMNIST', mixing_type =[], n_steps_generation=1
     else:
        half_MNIST_gen_option = True
 
-    Retrain_ds,Retrain_test_ds,mix_retrain_ds = get_retraining_data(MNISTtrain_ds,dbn, classifier,n_steps_generation = n_steps_generation,  ds_type = retrain_ds_type, half_MNIST_gen=half_MNIST_gen_option, Type_gen = mixing_type)
+    Retrain_ds,Retrain_test_ds,mix_retrain_ds = get_retraining_data(MNISTtrain_ds,dbn, classifier,n_steps_generation = n_steps_generation,  ds_type = retrain_ds_type, half_MNIST_gen=half_MNIST_gen_option, Type_gen = mixing_type, selection_gen = selection_gen)
     MNIST_classifier_list, _ = get_ridge_classifiers(MNISTtrain_ds, MNISTtest_ds,Force_relearning = False)
 
     
