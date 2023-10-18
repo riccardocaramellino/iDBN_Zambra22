@@ -84,13 +84,34 @@ def readout_V_to_Hlast(dbn,train_dataset,test_dataset, DEVICE='cuda', existing_c
   return readout_acc_V, classifier_list
 
 
-def get_retraining_data(MNIST_train_dataset, dbn=[], classifier=[], n_steps_generation = 10, ds_type = 'EMNIST', half_MNIST_gen=True, Type_gen = 'chimeras'):
+def get_relative_freq(valore, hist, bin_edges,numero_bin=30):
+    # Trova il bin in cui si trova il valore
+    indice_bin = np.digitize(valore, bin_edges)
+
+    # Controlla se l'indice è fuori dai limiti
+    if 1 <= indice_bin <= numero_bin:
+        frequenza_relativa = hist[indice_bin - 1]
+        return frequenza_relativa
+    else:
+        return 0.0  # Il valore è al di fuori dei bin
+
+def get_retraining_data(MNIST_train_dataset, dbn=[], classifier=[], n_steps_generation = 10, ds_type = 'EMNIST', half_MNIST_gen=True, Type_gen = 'chimeras', selection_gen = False):
   #Type_gen = 'chimeras'/'lbl_bias'/'mix'
   #NOTA: il labelling dell'EMNIST by class ha 62 labels: le cifre (0-9), lettere MAUSCOLE (10-36), lettere MINUSCOLE(38-62)
   #20,000 uppercase letters from the first 10 EMNIST classes.
+  coeff = 1
   nr_batches_retraining = round(20000/128) 
   half_batches = round(nr_batches_retraining/2)
   half_ds_size = half_batches*128 #i.e. 9984
+  
+  if selection_gen == True and half_MNIST_gen==True:
+    coeff = 1.5 #moltiplicatore del
+    vectors = []
+    for batch in MNIST_train_dataset['data']: #one batch at a time
+        vectors.append(torch.mean(batch,axis = 1))
+    avg_pixels_active_TrainMNIST = torch.cat(vectors) #This is the distribution of avg pixels active in the MNIST train dataset
+
+
   def decrease_labels_by_10(data): 
     image, label = data
     label -= 10  # Sottrai 10 da ciascuna etichetta
@@ -130,7 +151,7 @@ def get_retraining_data(MNIST_train_dataset, dbn=[], classifier=[], n_steps_gene
             g_H0to9 = g_H
         else:
             g_H0to9 = torch.hstack((g_H0to9,g_H)) #final size: [1000, 10]
-    n_samples = math.ceil(10000/(10*n_steps_generation))
+    n_samples = math.ceil(10000*coeff/(10*n_steps_generation))
     gen_hidden_100rep = g_H0to9.repeat(1,n_samples)
     VStack_labels=torch.tensor(range(dbn.Num_classes), device = 'cuda')
     VStack_labels=VStack_labels.repeat(n_samples)
@@ -139,7 +160,7 @@ def get_retraining_data(MNIST_train_dataset, dbn=[], classifier=[], n_steps_gene
     if Type_gen == 'lbl_bias':
       Vis_states = dict_DBN_lBias_classic['vis_states'].permute(0, 2, 1)
       Vis_states = Vis_states.reshape(Vis_states.shape[0]*Vis_states.shape[1],Vis_states.shape[2]) #Vis_states.shape[2]=784
-      indices = torch.randperm(Vis_states.size(0))[:half_ds_size]
+      indices = torch.randperm(Vis_states.size(0))[:half_ds_size*coeff]
       # Sample the rows using the generated indices
       sampled_data = Vis_states[indices]
        
@@ -148,7 +169,7 @@ def get_retraining_data(MNIST_train_dataset, dbn=[], classifier=[], n_steps_gene
        k = int((torch.mean(Mean, axis=0)[0]*dbn.top_layer_size)/100)
        Ian = Intersection_analysis_ZAMBRA(dbn, top_k_Hidden=k,nr_steps=n_steps_generation)
        digit_digit_common_elements_count_biasing = Ian.do_intersection_analysis()
-       n_samples = math.ceil(10000/(45*n_steps_generation))
+       n_samples = math.ceil(10000*coeff/(45*n_steps_generation))
        c=0
        for row in range(10):
           for col in range(row+1,10): #45 combinations(upper diagonal)
@@ -161,9 +182,31 @@ def get_retraining_data(MNIST_train_dataset, dbn=[], classifier=[], n_steps_gene
 
        Vis_states_chimera = Chim_gen_ds.permute(0, 2, 1)
        Vis_states_chimera = Vis_states_chimera.reshape(Vis_states_chimera.shape[0]*Vis_states_chimera.shape[1],Vis_states_chimera.shape[2]) #Vis_states.shape[2]=784
-       indices = torch.randperm(Vis_states_chimera.size(0))[:half_ds_size]
+       indices = torch.randperm(Vis_states_chimera.size(0))[:half_ds_size*coeff]
        # Sample the rows using the generated indices
-       sampled_data = Vis_states_chimera[indices] 
+       sampled_data = Vis_states_chimera[indices]
+    
+    if selection_gen == True and half_MNIST_gen==True:
+        avg_activity_sampled_data =  torch.mean(sampled_data,axis = 1)
+        hist, bin_edges = np.histogram(avg_pixels_active_TrainMNIST, bins=30, density=True)
+        results = torch.zeros_like(avg_activity_sampled_data)
+
+        for i in range(avg_activity_sampled_data.size(0)):
+            value = avg_activity_sampled_data[i].item()
+            results[i] = get_relative_freq(value, hist, bin_edges)
+
+        top_indices = torch.topk(results, k=half_ds_size).indices
+        sampled_data = sampled_data[top_indices]
+        avg_activity_sampled_data_topK =  torch.mean(sampled_data,axis = 1)
+
+        plt.hist(avg_pixels_active_TrainMNIST.cpu(), bins=30, color='blue', alpha=0.7,density=True, label='MNIST train set')  # You can adjust the number of bins as needed
+        plt.hist(avg_activity_sampled_data.cpu(), bins=30, color='red', alpha=0.7,density=True, label='Generated data - no correction')
+        plt.hist(avg_activity_sampled_data_topK.cpu(), bins=30, color='orange', alpha=0.7,density=True, label='Generated data - corrected')
+        # Add labels and a title
+        plt.xlabel('Average pixel activation')
+        plt.ylabel('Frequency')
+        plt.legend()
+        plt.show()
 
     half_MNIST = sampled_data.view(half_batches, 128, 784)
 
