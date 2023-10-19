@@ -209,7 +209,7 @@ def get_retraining_data(MNIST_train_dataset, dbn=[], classifier=[], n_steps_gene
         plt.hist(avg_activity_sampled_data_topK.cpu(), bins=30, color='orange', alpha=0.7,density=True, label='Generated data - corrected')
         # Add labels and a title
         plt.xlabel('Average pixel activation')
-        plt.ylabel('Frequency')
+        plt.ylabel('Relative frequency (%)')
         plt.legend()
         plt.show()
 
