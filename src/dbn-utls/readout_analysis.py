@@ -108,6 +108,59 @@ def load_existing_retrainDS(trainfile_path, testfile_path, nr_batches_retraining
   train_dataset_retraining_ds = {'data': train_data_retraining_ds, 'labels': train_labels_retraining_ds}
   test_dataset_retraining_ds = test_dataset
   return train_dataset_retraining_ds, test_dataset_retraining_ds
+
+def random_selection_withinBatch(batch_size=128):
+  # Creazione di una lista di tutti gli indici possibili da 0 a 127
+  all_indices = list(range(batch_size))
+  # Estrai 64 indici casuali dalla lista
+  random.shuffle(all_indices)
+  selected_indices = all_indices[:batch_size//2]
+  # Gli altri 64 indici sono quelli rimanenti
+  remaining_indices = all_indices[batch_size//2:]
+  return selected_indices, remaining_indices
+
+def mixing_data_wihin_batch(half_MNIST,half_retraining_ds):
+  batch_size = half_MNIST.shape[1] 
+  nr_batches = half_MNIST.shape[0]
+  mix_retraining_ds_MNIST = torch.zeros((nr_batches*2,batch_size,half_MNIST.shape[2]))
+
+  randomly_selected_batches_MNIST = list(range(nr_batches))
+  random.shuffle(randomly_selected_batches_MNIST)
+
+  randomly_selected_batches_retrainDS = list(range(nr_batches))
+  random.shuffle(randomly_selected_batches_retrainDS)
+
+  #print([randomly_selected_batches_MNIST[i]== randomly_selected_batches_retrainDS[i] for i in range(len(randomly_selected_batches_retrainDS))])
+
+  for idx in range(nr_batches):
+
+      selected_indices_MNIST, remaining_indices_MNIST = random_selection_withinBatch(batch_size)
+      selected_indices_retrainDS, remaining_indices_retrainDS = random_selection_withinBatch(batch_size)
+      
+      # if idx==0:
+      #   print([selected_indices_MNIST[i]== selected_indices_retrainDS[i] for i in range(len(selected_indices_retrainDS))])
+      #   print([selected_indices_MNIST[i]== remaining_indices_MNIST[i] for i in range(len(remaining_indices_MNIST))])
+
+      MNIST_examples = half_MNIST[randomly_selected_batches_MNIST[idx],selected_indices_MNIST,:]
+      retrainDS_examples = half_retraining_ds[randomly_selected_batches_retrainDS[idx],selected_indices_retrainDS,:]
+
+      mix_batch1 = torch.cat((MNIST_examples, retrainDS_examples), dim=0)
+      permuted_indices = torch.randperm(batch_size)
+      # Use the permutation to shuffle the examples of the dataset
+      mix_batch1 = mix_batch1[permuted_indices]
+      mix_retraining_ds_MNIST[idx,:,:] = mix_batch1
+
+
+      MNIST_examples2 = half_MNIST[randomly_selected_batches_MNIST[idx],remaining_indices_MNIST,:]
+      retrainDS_examples2 = half_retraining_ds[randomly_selected_batches_retrainDS[idx],remaining_indices_retrainDS,:]
+
+      mix_batch2 = torch.cat((MNIST_examples2, retrainDS_examples2), dim=0)
+      permuted_indices = torch.randperm(batch_size)
+      # Use the permutation to shuffle the examples of the dataset
+      mix_batch2 = mix_batch2[permuted_indices]
+      mix_retraining_ds_MNIST[idx+(nr_batches//2),:,:] = mix_batch2
+
+  return mix_retraining_ds_MNIST
   
 
 def get_retraining_data(MNIST_train_dataset, train_dataset_retraining_ds = {}, dbn=[], classifier=[], n_steps_generation = 10, ds_type = 'EMNIST', half_MNIST_gen=True, Type_gen = 'chimeras', selection_gen = False, correction_type = 'frequency'):
@@ -242,8 +295,9 @@ def get_retraining_data(MNIST_train_dataset, train_dataset_retraining_ds = {}, d
 
   half_retraining_ds = train_dataset_retraining_ds['data'][:half_batches,:,:].to('cuda')
   
-  mix_retraining_ds_MNIST = torch.cat((half_MNIST, half_retraining_ds), dim=0)
- 
+  #mix_retraining_ds_MNIST = torch.cat((half_MNIST, half_retraining_ds), dim=0)
+  mix_retraining_ds_MNIST=mixing_data_wihin_batch(half_MNIST,half_retraining_ds)
+
   # Generate a random permutation of indices
   permuted_indices = torch.randperm(nr_batches_retraining)
   # Use the permutation to shuffle the examples of the dataset
