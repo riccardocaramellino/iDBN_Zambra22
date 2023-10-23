@@ -443,5 +443,5 @@ def relearning(retrain_ds_type = 'EMNIST', mixing_type =[], n_steps_generation=1
     df_readout_MNIST.to_excel('Readout_on_MNIST_retrain_on_'+retrain_ds_type+'_'+type_retrain+'_'+type_mix+'.xlsx', index=False, header=False)
     Readout_last_layer_MNIST = df_readout_MNIST.values[:, len(dbn.rbm_layers)]
 
-    return Readout_last_layer_MNIST, Readout_last_layer_RETRAINING_DS
+    return Readout_last_layer_MNIST, Readout_last_layer_RETRAINING_DS, dbn
 
