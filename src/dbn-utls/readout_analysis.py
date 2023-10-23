@@ -223,6 +223,7 @@ def get_retraining_data(MNIST_train_dataset, train_dataset_retraining_ds = {}, d
   if not(half_MNIST_gen):
      half_MNIST = MNIST_train_dataset['data'][:half_batches,:,:].to('cuda')
   else:
+    compute_inverseW_for_lblBiasing_ZAMBRA(dbn,MNIST_train_dataset)
     for dig in range(dbn.Num_classes): #at the end of this loop, you have one example of label biasing per class
         g_H = label_biasing_ZAMBRA(dbn, on_digits=dig, topk = -1)
         if dig == 0:
