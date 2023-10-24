@@ -356,7 +356,7 @@ def get_ridge_classifiers(MNIST_Train_DS, MNIST_Test_DS, Force_relearning = True
 
 
 
-def relearning(retrain_ds_type = 'EMNIST', mixing_type =[], n_steps_generation=10, new_retrain_data = False, selection_gen = False, correction_type = 'frequency'):
+def relearning(retrain_ds_type = 'EMNIST', mixing_type =[], n_steps_generation=10, new_retrain_data = False, selection_gen = False, correction_type = 'frequency', l_par = 5):
     DEVICE='cuda'
     dbn,MNISTtrain_ds, MNISTtest_ds,classifier= tool_loader_ZAMBRA(DEVICE, only_data = False,Load_DBN_yn = 1)
     mixing_type_options = ['origMNIST', 'lbl_bias', 'chimeras','[]']
@@ -391,7 +391,7 @@ def relearning(retrain_ds_type = 'EMNIST', mixing_type =[], n_steps_generation=1
     with open(os.path.join(Zambra_folder_drive, 'cparams.json'), 'r') as filestream:
         CPARAMS = json.load(filestream)
 
-    if new_retrain_data == True:
+    if new_retrain_data == True and l_par==1:
        LPARAMS['EPOCHS']=1
        inner_loop_epochs = 5
     else:
