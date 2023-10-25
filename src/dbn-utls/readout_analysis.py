@@ -102,9 +102,11 @@ def sampling_gen_examples(results, prob_distr, cumulative_sum,desired_len_array 
     delta[delta<0] = np.inf
     index_p = (delta).argmin()
     indexes_suitable_imgs = torch.nonzero(results == prob_distr[index_p]).squeeze()
-    if not(indexes_suitable_imgs.numel() == 0):
+    if indexes_suitable_imgs.numel() > 1:
       random_index = random.choice(indexes_suitable_imgs.tolist())
       index_selected_samples.append(random_index)
+    elif indexes_suitable_imgs.numel() == 1:
+      index_selected_samples.append(int(indexes_suitable_imgs))
   return index_selected_samples
 
 def load_existing_retrainDS(trainfile_path, testfile_path, nr_batches_retraining):
@@ -296,8 +298,8 @@ def get_retraining_data(MNIST_train_dataset, train_dataset_retraining_ds = {}, d
         if correction_type == 'frequency':
           top_indices = torch.topk(results, k=half_ds_size).indices
         elif correction_type == 'sampling':
-          top_indices = torch.tensor(sampling_gen_examples(results, prob_distr, cumulative_sum,desired_len_array = half_ds_size + 200)) #200 è per evitare di andare sotto 9984
-          print(len(top_indices))
+          top_indices = torch.tensor(sampling_gen_examples(results, prob_distr, cumulative_sum,desired_len_array = half_ds_size + 1000)) #200 è per evitare di andare sotto 9984
+          top_indices = top_indices[:half_ds_size]
         else:
           top_indices = torch.tensor(np.where(results.cpu() != 0)[0])
           random_indices = torch.randperm(top_indices.size(0))
