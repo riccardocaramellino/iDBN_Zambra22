@@ -94,6 +94,19 @@ def get_relative_freq(valore, hist, bin_edges,numero_bin=30):
     else:
         return 0.0  # Il valore è al di fuori dei bin
 
+def sampling_gen_examples(results, prob_distr, cumulative_sum,desired_len_array = 9984):
+  random_numbers = np.random.rand(desired_len_array)
+  index_selected_samples = []
+  for r in random_numbers:
+    delta = cumulative_sum - r
+    delta[delta<0] = np.inf
+    index_p = (delta).argmin()
+    indexes_suitable_imgs = torch.nonzero(results == prob_distr[index_p]).squeeze()
+    if not(indexes_suitable_imgs.numel() == 0):
+      random_index = random.choice(indexes_suitable_imgs.tolist())
+      index_selected_samples.append(random_index)
+  return index_selected_samples
+
 def load_existing_retrainDS(trainfile_path, testfile_path, nr_batches_retraining):
 
   train_dataset = dict(np.load(trainfile_path))
@@ -172,8 +185,9 @@ def get_retraining_data(MNIST_train_dataset, train_dataset_retraining_ds = {}, d
   half_batches = round(nr_batches_retraining/2)
   half_ds_size = half_batches*128 #i.e. 9984
   
+
   if selection_gen == True and half_MNIST_gen==True:
-    coeff = 2 #moltiplicatore del
+    coeff = 2 #moltiplicatore. Un tempo stava a 2
     vectors = []
     for batch in MNIST_train_dataset['data']: #one batch at a time
         vectors.append(torch.mean(batch,axis = 1))
@@ -268,13 +282,22 @@ def get_retraining_data(MNIST_train_dataset, train_dataset_retraining_ds = {}, d
     if selection_gen == True and half_MNIST_gen==True:
         avg_activity_sampled_data =  torch.mean(sampled_data,axis = 1)
         hist, bin_edges = np.histogram(avg_pixels_active_TrainMNIST, bins=30, density=True)
+        sum_hist = np.sum(hist)
+        prob_distr = hist/sum_hist
+        cumulative_sum = np.cumsum(prob_distr)
+
         results = torch.zeros_like(avg_activity_sampled_data)
 
         for i in range(avg_activity_sampled_data.size(0)):
             value = avg_activity_sampled_data[i].item()
             results[i] = get_relative_freq(value, hist, bin_edges)
+            if correction_type == 'sampling':
+               results[i] = results[i]/sum_hist
         if correction_type == 'frequency':
           top_indices = torch.topk(results, k=half_ds_size).indices
+        elif correction_type == 'sampling':
+          top_indices = torch.tensor(sampling_gen_examples(results, prob_distr, cumulative_sum,desired_len_array = half_ds_size + 200)) #200 è per evitare di andare sotto 9984
+          print(len(top_indices))
         else:
           top_indices = torch.tensor(np.where(results.cpu() != 0)[0])
           random_indices = torch.randperm(top_indices.size(0))
