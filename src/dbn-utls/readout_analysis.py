@@ -95,18 +95,23 @@ def get_relative_freq(valore, hist, bin_edges,numero_bin=30):
         return 0.0  # Il valore è al di fuori dei bin
 
 def sampling_gen_examples(results, prob_distr, cumulative_sum,desired_len_array = 9984):
-  random_numbers = np.random.rand(desired_len_array)
+  random_numbers = np.random.rand(desired_len_array*10)
   index_selected_samples = []
-  for r in random_numbers:
-    delta = cumulative_sum - r
-    delta[delta<0] = np.inf
-    index_p = (delta).argmin()
-    indexes_suitable_imgs = torch.nonzero(results == prob_distr[index_p]).squeeze()
-    if indexes_suitable_imgs.numel() > 1:
+  c=0
+  while len(index_selected_samples)<desired_len_array:
+     r = random_numbers[c]
+     delta = cumulative_sum - r
+     delta[delta<0] = np.inf
+     index_p = (delta).argmin()
+     indexes_suitable_imgs = torch.nonzero(results == prob_distr[index_p]).squeeze()
+     if indexes_suitable_imgs.numel() > 1:
       random_index = random.choice(indexes_suitable_imgs.tolist())
-      index_selected_samples.append(random_index)
-    elif indexes_suitable_imgs.numel() == 1:
-      index_selected_samples.append(int(indexes_suitable_imgs))
+      if not(random_index in index_selected_samples):
+        index_selected_samples.append(random_index)
+     elif indexes_suitable_imgs.numel() == 1:
+      if not(random_index in index_selected_samples):
+        index_selected_samples.append(int(indexes_suitable_imgs))
+     c=c+1
   return index_selected_samples
 
 def load_existing_retrainDS(trainfile_path, testfile_path, nr_batches_retraining):
