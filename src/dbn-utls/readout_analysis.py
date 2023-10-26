@@ -305,6 +305,9 @@ def get_retraining_data(MNIST_train_dataset, train_dataset_retraining_ds = {}, d
         elif correction_type == 'sampling':
           top_indices = torch.tensor(sampling_gen_examples(results, prob_distr, cumulative_sum,desired_len_array = half_ds_size + 1000)) #200 è per evitare di andare sotto 9984
           top_indices = top_indices[:half_ds_size]
+          number_of_unique_elements = len(torch.unique(top_indices))
+          # Print in bold
+          print(f"\033[1mNumber of unique elements: {number_of_unique_elements}\033[0m")
         else:
           top_indices = torch.tensor(np.where(results.cpu() != 0)[0])
           random_indices = torch.randperm(top_indices.size(0))
