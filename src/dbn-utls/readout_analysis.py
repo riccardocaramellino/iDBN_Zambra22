@@ -352,7 +352,7 @@ def get_ridge_classifiers(MNIST_Train_DS, MNIST_Test_DS, Force_relearning = True
   EMNIST_rc_file= os.path.join(Zambra_folder_drive,'EMNIST_ridge_classifiers.pkl')
   print("\033[1m Make sure that your iDBN was trained only with MNIST for 100 epochs \033[0m")
   DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-  dbn,train_dataset, test_dataset,classifier= tool_loader_ZAMBRA(DEVICE, only_data = False, Load_DBN_yn = 1, last_layer_sz=last_layer_sz)
+  dbn,train_dataset, test_dataset,classifier= tool_loader_ZAMBRA(DEVICE, only_data = False,last_layer_sz=last_layer_sz, Load_DBN_yn = 1)
   if not(os.path.exists(MNIST_rc_file)) or Force_relearning:
     readout_acc_V, MNIST_classifier_list = readout_V_to_Hlast(dbn,MNIST_Train_DS, MNIST_Test_DS)
     # Save the list of classifiers to a file
@@ -412,10 +412,10 @@ def relearning(retrain_ds_type = 'EMNIST', mixing_type =[], n_steps_generation=1
        half_MNIST_gen_option = True
 
     Retrain_ds,Retrain_test_ds,mix_retrain_ds = get_retraining_data(MNISTtrain_ds,{},dbn, classifier,n_steps_generation = n_steps_generation,  ds_type = retrain_ds_type, half_MNIST_gen=half_MNIST_gen_option, Type_gen = mixing_type, selection_gen = selection_gen, correction_type = correction_type)
-    MNIST_classifier_list, _ = get_ridge_classifiers(MNISTtrain_ds, MNISTtest_ds,Force_relearning = False)
+    MNIST_classifier_list, _ = get_ridge_classifiers(MNISTtrain_ds, MNISTtest_ds,Force_relearning = False, last_layer_sz=last_layer_sz)
 
     
-    dbn,train_dataset, test_dataset,_= tool_loader_ZAMBRA(DEVICE, only_data = False,Load_DBN_yn = 1, last_layer_sz=last_layer_sz)
+    dbn,train_dataset, test_dataset,_= tool_loader_ZAMBRA(DEVICE, only_data = False,last_layer_sz=last_layer_sz, Load_DBN_yn = 1)
     Zambra_folder_drive = '/content/gdrive/My Drive/ZAMBRA_DBN/'
     DATASET_ID='MNIST'
 
