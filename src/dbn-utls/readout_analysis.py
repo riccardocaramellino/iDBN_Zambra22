@@ -83,7 +83,7 @@ def readout_V_to_Hlast(dbn,train_dataset,test_dataset, DEVICE='cuda', existing_c
   return readout_acc_V, classifier_list
 
 
-def get_relative_freq(valore, hist, bin_edges,numero_bin=30):
+def get_relative_freq(valore, hist, bin_edges,numero_bin=20):
     # Trova il bin in cui si trova il valore
     indice_bin = np.digitize(valore, bin_edges)
 
@@ -288,7 +288,7 @@ def get_retraining_data(MNIST_train_dataset, train_dataset_retraining_ds = {}, d
     
     if selection_gen == True and half_MNIST_gen==True:
         avg_activity_sampled_data =  torch.mean(sampled_data,axis = 1)
-        hist, bin_edges = np.histogram(avg_pixels_active_TrainMNIST, bins=30, density=True)
+        hist, bin_edges = np.histogram(avg_pixels_active_TrainMNIST, bins=20, density=True)
         sum_hist = np.sum(hist)
         prob_distr = hist/sum_hist
         cumulative_sum = np.cumsum(prob_distr)
@@ -316,9 +316,9 @@ def get_retraining_data(MNIST_train_dataset, train_dataset_retraining_ds = {}, d
         sampled_data = sampled_data[top_indices]
         avg_activity_sampled_data_topK =  torch.mean(sampled_data,axis = 1)
         plt.figure()
-        plt.hist(avg_pixels_active_TrainMNIST.cpu(), bins=30, color='blue', alpha=0.7,density=True, label='MNIST train set')  # You can adjust the number of bins as needed
-        plt.hist(avg_activity_sampled_data.cpu(), bins=30, color='red', alpha=0.7,density=True, label='Generated data - no correction')
-        plt.hist(avg_activity_sampled_data_topK.cpu(), bins=30, color='orange', alpha=0.7,density=True, label='Generated data - corrected')
+        plt.hist(avg_pixels_active_TrainMNIST.cpu(), bins=20, color='blue', alpha=0.7,density=True, label='MNIST train set')  # You can adjust the number of bins as needed
+        plt.hist(avg_activity_sampled_data.cpu(), bins=20, color='red', alpha=0.7,density=True, label='Generated data - no correction')
+        plt.hist(avg_activity_sampled_data_topK.cpu(), bins=20, color='orange', alpha=0.7,density=True, label='Generated data - corrected')
         # Add labels and a title
         plt.xlabel('Average pixel activation')
         plt.ylabel('Relative frequency (%)')
