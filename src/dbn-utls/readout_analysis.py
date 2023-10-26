@@ -348,8 +348,8 @@ def get_retraining_data(MNIST_train_dataset, train_dataset_retraining_ds = {}, d
 
 def get_ridge_classifiers(MNIST_Train_DS, MNIST_Test_DS, Force_relearning = True, last_layer_sz=1000):
   Zambra_folder_drive = '/content/gdrive/My Drive/ZAMBRA_DBN/'
-  MNIST_rc_file= os.path.join(Zambra_folder_drive,'MNIST_ridge_classifiers.pkl')
-  EMNIST_rc_file= os.path.join(Zambra_folder_drive,'EMNIST_ridge_classifiers.pkl')
+  MNIST_rc_file= os.path.join(Zambra_folder_drive,'MNIST_ridge_classifiers'+str(last_layer_sz)+'.pkl')
+  #EMNIST_rc_file= os.path.join(Zambra_folder_drive,'EMNIST_ridge_classifiers.pkl')
   print("\033[1m Make sure that your iDBN was trained only with MNIST for 100 epochs \033[0m")
   DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
   dbn,train_dataset, test_dataset,classifier= tool_loader_ZAMBRA(DEVICE, only_data = False,last_layer_sz=last_layer_sz, Load_DBN_yn = 1)
@@ -362,30 +362,30 @@ def get_ridge_classifiers(MNIST_Train_DS, MNIST_Test_DS, Force_relearning = True
     with open(MNIST_rc_file, 'rb') as file:
       MNIST_classifier_list = pickle.load(file)# Load the list of classifiers from the file
 
-  if not(os.path.exists(EMNIST_rc_file)) or Force_relearning:
-    train_dataset_EMNIST,test_dataset_EMNIST, _ =get_retraining_data(train_dataset)
-    Xtrain = train_dataset_EMNIST['data'].to(DEVICE)
-    Xtest  = test_dataset_EMNIST['data'].to(DEVICE)
-    Ytrain = train_dataset_EMNIST['labels'].to(DEVICE)
-    Ytest  = test_dataset_EMNIST['labels'].to(DEVICE)
-    DATASET_ID='MNIST'
-    with open(os.path.join(Zambra_folder_drive, f'lparams-{DATASET_ID.lower()}.json'), 'r') as filestream:
-        LPARAMS = json.load(filestream)
-    with open(os.path.join(Zambra_folder_drive, 'cparams.json'), 'r') as filestream:
-        CPARAMS = json.load(filestream)
-    LPARAMS['EPOCHS']=100
-    READOUT = CPARAMS['READOUT']
-    NUM_DISCR = CPARAMS['NUM_DISCR']
-    dbn.train(Xtrain, Xtest, Ytrain, Ytest, LPARAMS, readout = READOUT, num_discr = NUM_DISCR)
-    readout_acc_V, EMNIST_classifier_list = readout_V_to_Hlast(dbn,train_dataset_EMNIST,test_dataset_EMNIST)
-    # Save the list of classifiers to a file
-    with open(EMNIST_rc_file, 'wb') as file:
-        pickle.dump(EMNIST_classifier_list, file)
-  else:
-    with open(EMNIST_rc_file, 'rb') as file:
-      EMNIST_classifier_list = pickle.load(file)# Load the list of classifiers from the file
-  return MNIST_classifier_list, EMNIST_classifier_list
-
+  # if not(os.path.exists(EMNIST_rc_file)) or Force_relearning:
+  #   train_dataset_EMNIST,test_dataset_EMNIST, _ =get_retraining_data(train_dataset)
+  #   Xtrain = train_dataset_EMNIST['data'].to(DEVICE)
+  #   Xtest  = test_dataset_EMNIST['data'].to(DEVICE)
+  #   Ytrain = train_dataset_EMNIST['labels'].to(DEVICE)
+  #   Ytest  = test_dataset_EMNIST['labels'].to(DEVICE)
+  #   DATASET_ID='MNIST'
+  #   with open(os.path.join(Zambra_folder_drive, f'lparams-{DATASET_ID.lower()}.json'), 'r') as filestream:
+  #       LPARAMS = json.load(filestream)
+  #   with open(os.path.join(Zambra_folder_drive, 'cparams.json'), 'r') as filestream:
+  #       CPARAMS = json.load(filestream)
+  #   LPARAMS['EPOCHS']=100
+  #   READOUT = CPARAMS['READOUT']
+  #   NUM_DISCR = CPARAMS['NUM_DISCR']
+  #   dbn.train(Xtrain, Xtest, Ytrain, Ytest, LPARAMS, readout = READOUT, num_discr = NUM_DISCR)
+  #   readout_acc_V, EMNIST_classifier_list = readout_V_to_Hlast(dbn,train_dataset_EMNIST,test_dataset_EMNIST)
+  #   # Save the list of classifiers to a file
+  #   with open(EMNIST_rc_file, 'wb') as file:
+  #       pickle.dump(EMNIST_classifier_list, file)
+  # else:
+  #   with open(EMNIST_rc_file, 'rb') as file:
+  #     EMNIST_classifier_list = pickle.load(file)# Load the list of classifiers from the file
+  #return MNIST_classifier_list, EMNIST_classifier_list
+  return MNIST_classifier_list
 
 
 
@@ -412,7 +412,7 @@ def relearning(retrain_ds_type = 'EMNIST', mixing_type =[], n_steps_generation=1
        half_MNIST_gen_option = True
 
     Retrain_ds,Retrain_test_ds,mix_retrain_ds = get_retraining_data(MNISTtrain_ds,{},dbn, classifier,n_steps_generation = n_steps_generation,  ds_type = retrain_ds_type, half_MNIST_gen=half_MNIST_gen_option, Type_gen = mixing_type, selection_gen = selection_gen, correction_type = correction_type)
-    MNIST_classifier_list, _ = get_ridge_classifiers(MNISTtrain_ds, MNISTtest_ds,Force_relearning = False, last_layer_sz=last_layer_sz)
+    MNIST_classifier_list= get_ridge_classifiers(MNISTtrain_ds, MNISTtest_ds,Force_relearning = False, last_layer_sz=last_layer_sz)
 
     
     dbn,train_dataset, test_dataset,_= tool_loader_ZAMBRA(DEVICE, only_data = False,last_layer_sz=last_layer_sz, Load_DBN_yn = 1)
