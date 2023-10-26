@@ -255,7 +255,7 @@ def Multiclass_dataset(train_dataset, selected_idx = [20,31], for_classifier = F
 
 
 
-def tool_loader_ZAMBRA(DEVICE,  selected_idx = [], only_data = True,classifier_yn = True, Load_DBN_yn = 3):
+def tool_loader_ZAMBRA(DEVICE,  selected_idx = [], only_data = True,classifier_yn = True, last_layer_sz = 1000, Load_DBN_yn = 3):
   from google.colab import drive
   drive.mount('/content/gdrive')
   Zambra_folder_drive = '/content/gdrive/My Drive/ZAMBRA_DBN/'
@@ -392,7 +392,7 @@ def tool_loader_ZAMBRA(DEVICE,  selected_idx = [], only_data = True,classifier_y
     if not('CelebA' in DATASET_ID):
       Num_classes = 10
       nL = 3 #i.e. nr of layers
-      last_layer_sz = str(2000) #da cambiare in 1000 se si decide
+      last_layer_sz = str(last_layer_sz) #da cambiare in 1000 se si decide
     elif not(selected_idx == []):
       Num_classes = 2**len(selected_idx)
       nL = 3
