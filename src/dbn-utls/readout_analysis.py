@@ -346,13 +346,13 @@ def get_retraining_data(MNIST_train_dataset, train_dataset_retraining_ds = {}, d
     return mix_retraining_ds_MNIST
   
 
-def get_ridge_classifiers(MNIST_Train_DS, MNIST_Test_DS, Force_relearning = True):
+def get_ridge_classifiers(MNIST_Train_DS, MNIST_Test_DS, Force_relearning = True, last_layer_sz=1000):
   Zambra_folder_drive = '/content/gdrive/My Drive/ZAMBRA_DBN/'
   MNIST_rc_file= os.path.join(Zambra_folder_drive,'MNIST_ridge_classifiers.pkl')
   EMNIST_rc_file= os.path.join(Zambra_folder_drive,'EMNIST_ridge_classifiers.pkl')
   print("\033[1m Make sure that your iDBN was trained only with MNIST for 100 epochs \033[0m")
   DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-  dbn,train_dataset, test_dataset,classifier= tool_loader_ZAMBRA(DEVICE, only_data = False, Load_DBN_yn = 1)
+  dbn,train_dataset, test_dataset,classifier= tool_loader_ZAMBRA(DEVICE, only_data = False, Load_DBN_yn = 1, last_layer_sz=last_layer_sz)
   if not(os.path.exists(MNIST_rc_file)) or Force_relearning:
     readout_acc_V, MNIST_classifier_list = readout_V_to_Hlast(dbn,MNIST_Train_DS, MNIST_Test_DS)
     # Save the list of classifiers to a file
@@ -389,9 +389,9 @@ def get_ridge_classifiers(MNIST_Train_DS, MNIST_Test_DS, Force_relearning = True
 
 
 
-def relearning(retrain_ds_type = 'EMNIST', mixing_type =[], n_steps_generation=10, new_retrain_data = False, selection_gen = False, correction_type = 'frequency', l_par = 5):
+def relearning(retrain_ds_type = 'EMNIST', mixing_type =[], n_steps_generation=10, new_retrain_data = False, selection_gen = False, correction_type = 'frequency', l_par = 5,  last_layer_sz = 1000):
     DEVICE='cuda'
-    dbn,MNISTtrain_ds, MNISTtest_ds,classifier= tool_loader_ZAMBRA(DEVICE, only_data = False,Load_DBN_yn = 1)
+    dbn,MNISTtrain_ds, MNISTtest_ds,classifier= tool_loader_ZAMBRA(DEVICE, only_data = False,Load_DBN_yn = 1, last_layer_sz=last_layer_sz)
     mixing_type_options = ['origMNIST', 'lbl_bias', 'chimeras','[]']
     type_retrain = 'interleaved'
     type_mix = 'mix_'+mixing_type
@@ -415,7 +415,7 @@ def relearning(retrain_ds_type = 'EMNIST', mixing_type =[], n_steps_generation=1
     MNIST_classifier_list, _ = get_ridge_classifiers(MNISTtrain_ds, MNISTtest_ds,Force_relearning = False)
 
     
-    dbn,train_dataset, test_dataset,_= tool_loader_ZAMBRA(DEVICE, only_data = False,Load_DBN_yn = 1)
+    dbn,train_dataset, test_dataset,_= tool_loader_ZAMBRA(DEVICE, only_data = False,Load_DBN_yn = 1, last_layer_sz=last_layer_sz)
     Zambra_folder_drive = '/content/gdrive/My Drive/ZAMBRA_DBN/'
     DATASET_ID='MNIST'
 
