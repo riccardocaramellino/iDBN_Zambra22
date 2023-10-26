@@ -392,7 +392,7 @@ def tool_loader_ZAMBRA(DEVICE,  selected_idx = [], only_data = True,classifier_y
     if not('CelebA' in DATASET_ID):
       Num_classes = 10
       nL = 3 #i.e. nr of layers
-      last_layer_sz = str(1000)
+      last_layer_sz = str(2000) #da cambiare in 1000 se si decide
     elif not(selected_idx == []):
       Num_classes = 2**len(selected_idx)
       nL = 3
