@@ -460,8 +460,8 @@ def relearning(retrain_ds_type = 'EMNIST', mixing_type =[], n_steps_generation=1
             Xtrain = mix_retrain_ds.to(DEVICE)
             print(ep)
           dbn.train(Xtrain, Xtest, Ytrain, Ytest, LPARAMS, readout = READOUT, num_discr = NUM_DISCR)
-        #readout_acc_V_DIGITS,_ = readout_V_to_Hlast(dbn,train_dataset,test_dataset,existing_classifier_list = MNIST_classifier_list)
-        readout_acc_V_DIGITS,_ = readout_V_to_Hlast(dbn,train_dataset,test_dataset)
+        readout_acc_V_DIGITS,_ = readout_V_to_Hlast(dbn,train_dataset,test_dataset,existing_classifier_list = MNIST_classifier_list)
+        #readout_acc_V_DIGITS,_ = readout_V_to_Hlast(dbn,train_dataset,test_dataset) retrain at every iteration on digits
         readout_acc_Seq_DIGITS[iteration+1,:] = readout_acc_V_DIGITS
 
         readout_acc_V_LETTERS,_ = readout_V_to_Hlast(dbn,Retrain_ds,Retrain_test_ds)
