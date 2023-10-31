@@ -22,7 +22,7 @@ class NonLinear(torch.nn.Linear):
 
 class DBN(torch.nn.Module):
     
-    def __init__(self, alg_name, dataset_id, init_scheme, path_model, epochs):
+    def __init__(self, alg_name, dataset_id, init_scheme, path_model, epochs, last_layer_sz =1000):
         super(DBN, self).__init__()
         
         if dataset_id == 'MNIST' or dataset_id == 'EMNIST':
@@ -187,8 +187,8 @@ class gDBN(DBN):
 
 class iDBN(DBN):
     
-    def __init__(self, alg_name, dataset_id, init_scheme, path_model, epochs):
-        super(iDBN, self).__init__(alg_name, dataset_id, init_scheme, path_model, epochs)
+    def __init__(self, alg_name, dataset_id, init_scheme, path_model, epochs, last_layer_sz=1000):
+        super(iDBN, self).__init__(alg_name, dataset_id, init_scheme, path_model, epochs, last_layer_sz =1000)
         
         self.algo = 'i'
     #end
