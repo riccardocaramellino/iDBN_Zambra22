@@ -27,8 +27,9 @@ def data_and_labels(data_train, BATCH_SIZE,NUM_FEAT,DATASET_ID,n_cols_labels):
      d = 'cuda'
   else:
      d = 'cpu'
-  train_loader = DataLoader(data_train, batch_size=BATCH_SIZE, shuffle=True, generator=torch.Generator(device=d)) #create a dataloader with the data shuffled
-  #NOTE: generator=torch.Generator(device='cuda') seemes mandatory since oct 2023
+  train_loader = DataLoader(data_train, batch_size=BATCH_SIZE, shuffle=False, generator=torch.Generator(device=d)) #create a dataloader with the data shuffled
+  #shuffle=False impedisce al DataLoader di mescolare casualmente i dati durante l'addestramento, consentendo di iterare attraverso i dati nell'ordine originale in cui sono stati forniti.
+  #Questo è stato fatto perchè alternativamente da un Type error che non sono riuscito a risolvere
   num_batches = data_train.__len__() // BATCH_SIZE # Calculate the total number of batches (NOTE: data_train.__len__() is equivalent to len(data_train))
   # Create empty tensors to store the training data and labels
   train_data = torch.empty(num_batches, BATCH_SIZE, NUM_FEAT)
