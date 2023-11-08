@@ -220,7 +220,7 @@ def get_retraining_data(MNIST_train_dataset, train_dataset_retraining_ds = {}, d
           data_train_retraining_ds = datasets.EMNIST('../data', train=True,split = 'byclass', download=True, transform=transform)
           data_test_retraining_ds = datasets.EMNIST('../data', train=False,split = 'byclass', download=True, transform=transform)
           #target_classes = list(range(10, 20)) #i.e. the first 10 capital letter classes
-          target_classes = [25, 18,  4,  6,  1, 11, 19,  9, 16, 17] #previously best: [10,12,14,17,20,27,29,31,34,35]
+          target_classes = [25, 18,  4,  16, 17,  1, 19, 11,  6,  9] #previously best: [10,12,14,17,20,27,29,31,34,35]
           data_train_retraining_ds = [item for item in data_train_retraining_ds if item[1] in target_classes]
           data_test_retraining_ds = [item for item in data_test_retraining_ds if item[1] in target_classes]
           #i relabel data from 10-19 to 0-9
