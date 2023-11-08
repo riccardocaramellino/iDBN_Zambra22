@@ -220,7 +220,7 @@ def get_retraining_data(MNIST_train_dataset, train_dataset_retraining_ds = {}, d
           data_train_retraining_ds = datasets.EMNIST('../data', train=True,split = 'byclass', download=True, transform=transform)
           data_test_retraining_ds = datasets.EMNIST('../data', train=False,split = 'byclass', download=True, transform=transform)
           #target_classes = list(range(10, 20)) #i.e. the first 10 capital letter classes
-          target_classes = [10,12,14,17,20,27,29,31,34,35]
+          target_classes = [25, 18,  4,  6,  1, 11, 19,  9, 16, 17] #previously best: [10,12,14,17,20,27,29,31,34,35]
           data_train_retraining_ds = [item for item in data_train_retraining_ds if item[1] in target_classes]
           data_test_retraining_ds = [item for item in data_test_retraining_ds if item[1] in target_classes]
           #i relabel data from 10-19 to 0-9
@@ -479,4 +479,31 @@ def relearning(retrain_ds_type = 'EMNIST', mixing_type =[], n_steps_generation=1
     Readout_last_layer_MNIST = df_readout_MNIST.values[:, len(dbn.rbm_layers)]
 
     return Readout_last_layer_MNIST, Readout_last_layer_RETRAINING_DS, dbn
+
+
+def get_prototypes(Train_dataset,nr_categories=26):
+  Prototypes = torch.zeros(nr_categories,Train_dataset['data'].shape[2])
+  beg_range=0
+  if nr_categories == 26:
+    beg_range=10
+  for l_idx in range(beg_range,beg_range+nr_categories):
+    if nr_categories==10:
+      indices = torch.nonzero(torch.from_numpy(Train_dataset['labels'])==l_idx)
+    else:
+      indices = torch.nonzero(Train_dataset['labels']==l_idx)
+
+    sel_imgs = torch.zeros(indices.shape[0],Train_dataset['data'].shape[2])
+
+    for c,idx in enumerate(indices):
+      nB = int(idx[0])
+      nwB = int(idx[1])
+      if nr_categories==10:
+        sel_imgs[c,:] = torch.from_numpy(Train_dataset['data'])[nB,nwB,:]
+      else:
+        sel_imgs[c,:] = Train_dataset['data'][nB,nwB,:]
+
+    Avg_cat = torch.mean(sel_imgs,axis = 0)
+    Prototypes[l_idx-10,:] = Avg_cat
+
+  return Prototypes
 
