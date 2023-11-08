@@ -487,20 +487,14 @@ def get_prototypes(Train_dataset,nr_categories=26):
   if nr_categories == 26:
     beg_range=10
   for l_idx in range(beg_range,beg_range+nr_categories):
-    if nr_categories==10:
-      indices = torch.nonzero(torch.from_numpy(Train_dataset['labels'])==l_idx)
-    else:
-      indices = torch.nonzero(Train_dataset['labels']==l_idx)
+    indices = torch.nonzero(Train_dataset['labels']==l_idx)
 
     sel_imgs = torch.zeros(indices.shape[0],Train_dataset['data'].shape[2])
 
     for c,idx in enumerate(indices):
       nB = int(idx[0])
       nwB = int(idx[1])
-      if nr_categories==10:
-        sel_imgs[c,:] = torch.from_numpy(Train_dataset['data'])[nB,nwB,:]
-      else:
-        sel_imgs[c,:] = Train_dataset['data'][nB,nwB,:]
+      sel_imgs[c,:] = Train_dataset['data'][nB,nwB,:]
 
     Avg_cat = torch.mean(sel_imgs,axis = 0)
     Prototypes[l_idx-10,:] = Avg_cat
