@@ -507,3 +507,45 @@ def get_prototypes(Train_dataset,nr_categories=26):
 
   return Prototypes
 
+'''
+analysis prototypes:
+MNIST_prototypes = get_prototypes(train_dataset,nr_categories=10)
+EMNIST_prototypes = get_prototypes(train_dataset_retraining_ds,nr_categories=26)
+
+Euclidean_dist_MNIST_EMNIST = torch.zeros(MNIST_prototypes.shape[0],EMNIST_prototypes.shape[0])
+
+for i_MNIST, MNIST_prot in enumerate(MNIST_prototypes):
+  for i_EMNIST, EMNIST_prot in enumerate(EMNIST_prototypes):
+    Euclidean_dist_MNIST_EMNIST[i_MNIST, i_EMNIST] = torch.norm(MNIST_prot - EMNIST_prot)
+
+Mins, _ =torch.min(Euclidean_dist_MNIST_EMNIST,axis=0)
+topk_values, topk_indices = torch.topk(Mins, k=10)
+alphabet = "abcdefghijklmnopqrstuvwxyz"
+
+# Map indices to letters
+letters = [alphabet[i] for i in topk_indices]
+
+# Join the letters to form a string
+result = ''.join(letters)
+
+print("Letters with the specified indices:", result)
+
+#vedere i prototipi
+Letter_prototypes_28x28 = torch.zeros(26,28,28)
+c=0
+for lp in EMNIST_prototypes:
+  image = lp.view(28, 28)
+  # 1. Rotate the tensor 90 degrees in the opposite direction
+  #image = torch.rot90(image, k=-1)
+
+  # 2. Flip the tensor horizontally to restore it to its original orientation
+  #image = torch.flip(image, [1])
+  #Letter_prototypes_28x28[c,:,:] = image
+
+  # Display the image using Matplotlib
+  plt.imshow(image.cpu(), cmap='gray')
+  plt.show()
+  c=c+1
+
+
+'''
