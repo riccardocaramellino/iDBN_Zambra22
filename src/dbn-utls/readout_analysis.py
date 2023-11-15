@@ -255,7 +255,7 @@ def get_retraining_data(MNIST_train_dataset, train_dataset_retraining_ds = {}, d
     n_samples = math.ceil(10000*coeff/(10*n_steps_generation))
     #gen_hidden_100rep = g_H0to9.repeat(1,n_samples)
     
-    gen_hidden_100rep = torch.rand((1000, 100))
+    gen_hidden_100rep = torch.rand((1000, n_samples*10))
     VStack_labels=torch.tensor(range(dbn.Num_classes), device = 'cuda')
     VStack_labels=VStack_labels.repeat(n_samples)
     dict_DBN_lBias_classic = generate_from_hidden_ZAMBRA(dbn, gen_hidden_100rep, nr_gen_steps=n_steps_generation)
