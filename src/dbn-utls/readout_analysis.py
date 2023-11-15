@@ -263,7 +263,7 @@ def get_retraining_data(MNIST_train_dataset, train_dataset_retraining_ds = {}, d
     original_W = dbn.weights_inv
 
     for it in range(n_samples):
-      dbn.weights_inv = original_W + torch.normal(mean=0.0, std=float(torch.rand((1))), size=dbn.weights_inv.shape)
+      dbn.weights_inv = original_W + torch.normal(mean=0.0, std=float(torch.std(original_W)), size=dbn.weights_inv.shape)
 
       for dig in range(dbn.Num_classes):
         g_H = label_biasing_ZAMBRA(dbn, on_digits=dig, topk = -1)
