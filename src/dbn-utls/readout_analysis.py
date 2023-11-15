@@ -255,9 +255,23 @@ def get_retraining_data(MNIST_train_dataset, train_dataset_retraining_ds = {}, d
     n_samples = math.ceil(10000*coeff/(10*n_steps_generation))
     gen_hidden_100rep = g_H0to9.repeat(1,n_samples)
     
-    #gen_hidden_100rep = torch.rand((1000, n_samples*10)) #funziona bene per generazioni ad ogni iterazione
-    noise = torch.normal(mean=0.0, std=1, size=(1000, n_samples*10))
-    gen_hidden_100rep = gen_hidden_100rep + noise
+    gen_hidden_100rep = torch.rand((1000, n_samples*10)) #funziona bene per generazioni ad ogni iterazione
+    #NON FUNZIONA:
+    #noise = torch.normal(mean=0.0, std=1, size=(1000, n_samples*10))
+    #gen_hidden_100rep = gen_hidden_100rep + noise
+
+    original_W = dbn.weights_inv
+
+    for it in range(n_samples):
+      dbn.weights_inv = original_W + torch.normal(mean=0.0, std=float(torch.rand((1))), size=dbn.weights_inv.shape)
+
+      for dig in range(dbn.Num_classes):
+        g_H = label_biasing_ZAMBRA(dbn, on_digits=dig, topk = -1)
+        if dig == 0:
+          g_H0to9 = g_H
+        else:
+          g_H0to9 = torch.hstack((g_H0to9,g_H))
+      gen_hidden_100rep[:,((it+1)*10)-10:((it+1)*10)] = g_H0to9
 
     VStack_labels=torch.tensor(range(dbn.Num_classes), device = 'cuda')
     VStack_labels=VStack_labels.repeat(n_samples)
