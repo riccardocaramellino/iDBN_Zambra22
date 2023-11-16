@@ -25,7 +25,8 @@ def readout_V_to_Hlast(dbn,train_dataset,test_dataset, DEVICE='cuda', existing_c
   n_test_batches = Xtest.shape[0]
   batch_size = Xtrain.shape[1]
 
-  upper = int(Xtrain.shape[0]*(4/5))
+  #upper = int(Xtrain.shape[0]*(4/5))
+  upper = Xtrain.shape[0]
   if len(existing_classifier_list) == 0:
     readout_acc,classifier = dbn.rbm_layers[1].get_readout(Xtrain[:upper, :, :], Xtest, Ytrain[:upper, :, :], Ytest)
   else:
@@ -61,8 +62,10 @@ def readout_V_to_Hlast(dbn,train_dataset,test_dataset, DEVICE='cuda', existing_c
       #end WITH
       print(rbm_idx)
       #if rbm_idx==2:
-      upper = int(_Xtrain.shape[0]*(4/5))
-      
+      print('eccomi')
+      #upper = int(_Xtrain.shape[0]*(4/5))
+      upper = _Xtrain.shape[0]
+
       if len(existing_classifier_list) == 0:
         readout_acc, classifier = rbm.get_readout(_Xtrain[:upper, :, :], _Xtest, Ytrain[:upper, :, :], Ytest)
       else:
@@ -200,11 +203,11 @@ def get_retraining_data(MNIST_train_dataset, train_dataset_retraining_ds = {}, d
         vectors.append(torch.mean(batch,axis = 1))
     avg_pixels_active_TrainMNIST = torch.cat(vectors) #This is the distribution of avg pixels active in the MNIST train dataset
 
-  
-  def decrease_labels_by_10(data): 
+
+  def decrease_labels_by_10(data, sorted_list):
     image, label = data
-    label -= 10  # Sottrai 10 da ciascuna etichetta
-    return image, label
+    return image, sorted_list.index(label)
+
   #load  EMNIST byclass data
   if not(bool(train_dataset_retraining_ds)):
     Zambra_folder_drive = '/content/gdrive/My Drive/ZAMBRA_DBN/'
@@ -226,6 +229,23 @@ def get_retraining_data(MNIST_train_dataset, train_dataset_retraining_ds = {}, d
           #i relabel data from 10-19 to 0-9
           data_train_retraining_ds = [decrease_labels_by_10(item) for item in data_train_retraining_ds]
           data_test_retraining_ds = [decrease_labels_by_10(item) for item in data_test_retraining_ds]
+          #questi loop sono per raddrizzare le lettere
+          data_train_retraining_L = []
+          for item in data_train_retraining_ds:
+            image = item[0].view(28, 28)
+            image = torch.rot90(image, k=-1)
+            image = torch.flip(image, [1])
+            data_train_retraining_L.append((image,item[1]))
+
+          data_test_retraining_L = []
+          for item in data_test_retraining_ds:
+            image= item[0].view(28, 28)
+            image = torch.rot90(image, k=-1)
+            image = torch.flip(image, [1])
+            data_test_retraining_L.append((image,item[1]))
+
+          data_test_retraining_ds = data_test_retraining_L
+          data_train_retraining_ds = data_train_retraining_L
       elif ds_type == 'fMNIST':
           data_train_retraining_ds = datasets.FashionMNIST('../data', train=True, download=True, transform=transform)
           data_test_retraining_ds = datasets.FashionMNIST('../data', train=False, download=True, transform=transform)
