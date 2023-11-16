@@ -224,11 +224,12 @@ def get_retraining_data(MNIST_train_dataset, train_dataset_retraining_ds = {}, d
           data_test_retraining_ds = datasets.EMNIST('../data', train=False,split = 'byclass', download=True, transform=transform)
           #target_classes = list(range(10, 20)) #i.e. the first 10 capital letter classes
           target_classes = [22,32,26,16,30,11,20,10,23,25] #previously best: ACEHKRTVYZ
+          sorted_list = sorted(target_classes)
           data_train_retraining_ds = [item for item in data_train_retraining_ds if item[1] in target_classes]
           data_test_retraining_ds = [item for item in data_test_retraining_ds if item[1] in target_classes]
           #i relabel data from 10-19 to 0-9
-          data_train_retraining_ds = [decrease_labels_by_10(item) for item in data_train_retraining_ds]
-          data_test_retraining_ds = [decrease_labels_by_10(item) for item in data_test_retraining_ds]
+          data_train_retraining_ds = [decrease_labels_by_10(item,sorted_list) for item in data_train_retraining_ds]
+          data_test_retraining_ds = [decrease_labels_by_10(item,sorted_list) for item in data_test_retraining_ds]
           #questi loop sono per raddrizzare le lettere
           data_train_retraining_L = []
           for item in data_train_retraining_ds:

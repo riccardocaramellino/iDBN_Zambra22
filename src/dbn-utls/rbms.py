@@ -121,6 +121,7 @@ class RBM(torch.nn.Module):
                     
                     loss = self.CD_params_update(pos_v, lparams)
                     train_loss += loss
+                    
                     _Xtrain[n,:,:], _ = self.forward(pos_v)
                     
                     tepoch.set_postfix(MSE = train_loss.div(idx + 1).item())
