@@ -230,23 +230,23 @@ def get_retraining_data(MNIST_train_dataset, train_dataset_retraining_ds = {}, d
           #i relabel data from 10-19 to 0-9
           data_train_retraining_ds = [decrease_labels_by_10(item,sorted_list) for item in data_train_retraining_ds]
           data_test_retraining_ds = [decrease_labels_by_10(item,sorted_list) for item in data_test_retraining_ds]
-          #questi loop sono per raddrizzare le lettere
-          data_train_retraining_L = []
-          for item in data_train_retraining_ds:
-            image = item[0].view(28, 28)
-            image = torch.rot90(image, k=-1)
-            image = torch.flip(image, [1])
-            data_train_retraining_L.append((image,item[1]))
+          # #questi loop sono per raddrizzare le lettere
+          # data_train_retraining_L = []
+          # for item in data_train_retraining_ds:
+          #   image = item[0].view(28, 28)
+          #   image = torch.rot90(image, k=-1)
+          #   image = torch.flip(image, [1])
+          #   data_train_retraining_L.append((image,item[1]))
 
-          data_test_retraining_L = []
-          for item in data_test_retraining_ds:
-            image= item[0].view(28, 28)
-            image = torch.rot90(image, k=-1)
-            image = torch.flip(image, [1])
-            data_test_retraining_L.append((image,item[1]))
+          # data_test_retraining_L = []
+          # for item in data_test_retraining_ds:
+          #   image= item[0].view(28, 28)
+          #   image = torch.rot90(image, k=-1)
+          #   image = torch.flip(image, [1])
+          #   data_test_retraining_L.append((image,item[1]))
 
-          data_test_retraining_ds = data_test_retraining_L
-          data_train_retraining_ds = data_train_retraining_L
+          # data_test_retraining_ds = data_test_retraining_L
+          # data_train_retraining_ds = data_train_retraining_L
       elif ds_type == 'fMNIST':
           data_train_retraining_ds = datasets.FashionMNIST('../data', train=True, download=True, transform=transform)
           data_test_retraining_ds = datasets.FashionMNIST('../data', train=False, download=True, transform=transform)
